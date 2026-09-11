@@ -33,7 +33,15 @@ export default function WorksHuy() {
   const fRef = useRef(0);
   const idxRef = useRef(0);
   const [idx, setIdx] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
   const hRef = useRef(900);
+  const clipTopRef = useRef(0); // tinggi "clipping" atas reel list (hindari chrome)
+
+  const goTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+  const nav = (to: string) => {
+    setMenuOpen(false);
+    go(to);
+  };
 
   const reduced =
     typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -51,7 +59,11 @@ export default function WorksHuy() {
     const stage = stageRef.current;
     if (!section || !stage) return;
 
-    hRef.current = stage.clientHeight || window.innerHeight;
+    const measure = () => {
+      hRef.current = stage.clientHeight || window.innerHeight;
+      clipTopRef.current = window.innerWidth >= 768 ? 72 : 0; // md:top-[4.5rem]
+    };
+    measure();
 
     const apply = (f: number) => {
       const h = hRef.current;
@@ -66,11 +78,11 @@ export default function WorksHuy() {
           j,
         )}deg) scale(${(1 - Math.min(0.08, Math.abs(d) * 0.08)).toFixed(3)})`;
       });
-      // list: item aktif selalu di tengah
+      // list: item aktif selalu di tengah (dikoreksi clip atas reel)
       if (listRef.current) {
-        listRef.current.style.transform = `translateY(${(h / 2 - (f + 0.5) * ITEM).toFixed(
-          1,
-        )}px)`;
+        listRef.current.style.transform = `translateY(${(
+          h / 2 - clipTopRef.current - (f + 0.5) * ITEM
+        ).toFixed(1)}px)`;
       }
       const i = Math.min(N - 1, Math.max(0, Math.round(f)));
       if (i !== idxRef.current) {
@@ -117,7 +129,7 @@ export default function WorksHuy() {
       window.scrollTo({ top: st.start + (st.end - st.start) * target, behavior: 'smooth' });
     };
     const onResize = () => {
-      hRef.current = stage.clientHeight || window.innerHeight;
+      measure();
       apply(fRef.current);
       ScrollTrigger.refresh();
     };
@@ -169,8 +181,61 @@ export default function WorksHuy() {
           </span>
         </div>
 
-        {/* kanan atas */}
-        <div className="absolute right-4 top-20 text-right md:right-10 md:top-24">
+        {/* chrome HUYMI — wordmark kiri-atas */}
+        <button
+          onClick={goTop}
+          aria-label="wah:anggaaa — ke atas"
+          className="absolute top-5 left-5 z-10 cursor-pointer font-display text-[15px] font-bold uppercase tracking-[0.05em] transition-opacity hover:opacity-70 md:top-6 md:left-7 md:text-[22px]"
+        >
+          WAH:ANGGAAA
+        </button>
+
+        {/* chrome HUYMI — blok MENU (desktop) */}
+        <div className="absolute top-5 left-[8.6rem] z-10 hidden md:top-6 md:left-[12.5rem] md:block">
+          <div className="flex items-start gap-3.5">
+            <span aria-hidden className="mt-2 block h-11 w-[3px] bg-ink" />
+            <div>
+              <p className="lbl mb-2.5 text-ink/55">menu</p>
+              <nav className="flex flex-col items-start gap-0.5 font-serif text-[19px] leading-[1.15]">
+                <button onClick={goTop} className="cursor-pointer text-ink">
+                  → work.
+                </button>
+                <button
+                  onClick={() => go('/about')}
+                  className="cursor-pointer text-ink/55 transition-colors hover:text-ink"
+                >
+                  about.
+                </button>
+                <button
+                  onClick={() => go('/contact')}
+                  className="cursor-pointer text-ink/55 transition-colors hover:text-ink"
+                >
+                  contact.
+                </button>
+                <button
+                  onClick={() => go('/journal')}
+                  className="cursor-pointer text-ink/55 transition-colors hover:text-ink"
+                >
+                  journal.
+                </button>
+              </nav>
+            </div>
+          </div>
+        </div>
+
+        {/* chrome HUYMI — hamburger (mobile) */}
+        <button
+          onClick={() => setMenuOpen(true)}
+          aria-label="buka menu"
+          className="absolute top-5 right-5 z-20 flex h-10 w-10 cursor-pointer flex-col items-center justify-center gap-[5px] md:hidden"
+        >
+          <span className="h-[2px] w-6 bg-ink" />
+          <span className="h-[2px] w-6 bg-ink" />
+          <span className="h-[2px] w-6 bg-ink" />
+        </button>
+
+        {/* kanan atas (desktop) */}
+        <div className="absolute top-7 right-4 hidden text-right md:top-8 md:right-7 md:block">
           <p className="lbl text-ink">[ just for fun ]</p>
           <p className="lbl mt-0.5 text-ink/45">working from jakarta</p>
         </div>
@@ -232,15 +297,24 @@ export default function WorksHuy() {
           </a>
         </div>
 
-        {/* list proyek di kanan (reel) */}
-        <div className="absolute top-0 right-4 hidden h-full w-[46vw] max-w-[320px] overflow-hidden sm:block md:right-10">
+        {/* list proyek di kanan (reel) — atasnya di-clip di bawah chrome
+            agar item yang bergulir tidak menabrak teks kanan-atas */}
+        <div className="absolute right-4 bottom-0 hidden top-0 w-[46vw] max-w-[320px] overflow-hidden sm:block md:top-[4.5rem] md:right-10">
           <div
             ref={animated ? listRef : undefined}
             className="absolute inset-x-0 top-0"
             // mode animated: transform sepenuhnya milik GSAP (jangan style prop
             // yang ikut re-render → bakal menimpa animasi di tengah scrub)
             style={
-              animated ? undefined : { transform: `translateY(${(hRef.current / 2 - (i + 0.5) * ITEM).toFixed(0)}px)` }
+              animated
+                ? undefined
+                : {
+                    transform: `translateY(${(
+                      hRef.current / 2 -
+                      (typeof window !== 'undefined' && window.innerWidth >= 768 ? 72 : 0) -
+                      (i + 0.5) * ITEM
+                    ).toFixed(0)}px)`,
+                  }
             }
           >
             {WORKS.map((im, j) => (
@@ -314,6 +388,47 @@ export default function WorksHuy() {
     );
   };
 
+  /* ---------- overlay menu (mobile) ---------- */
+  const menuOverlay =
+    menuOpen && (
+      <div className="fixed inset-0 z-[80] bg-paper" role="dialog" aria-label="Menu">
+        <div className="flex items-center justify-between px-6 pt-6">
+          <p className="font-display text-[15px] font-bold uppercase tracking-[0.05em]">WAH:ANGGAAA</p>
+          <button
+            onClick={() => setMenuOpen(false)}
+            aria-label="tutup menu"
+            className="cursor-pointer text-[28px] leading-none"
+          >
+            ×
+          </button>
+        </div>
+        <nav className="mt-16 flex flex-col gap-4 px-6 font-serif text-[38px] leading-tight">
+          <button
+            onClick={() => {
+              setMenuOpen(false);
+              goTop();
+            }}
+            className="cursor-pointer text-left text-ink"
+          >
+            → work.
+          </button>
+          <button onClick={() => nav('/about')} className="cursor-pointer text-left text-ink/70 hover:text-ink">
+            about.
+          </button>
+          <button onClick={() => nav('/contact')} className="cursor-pointer text-left text-ink/70 hover:text-ink">
+            contact.
+          </button>
+          <button onClick={() => nav('/journal')} className="cursor-pointer text-left text-ink/70 hover:text-ink">
+            journal.
+          </button>
+        </nav>
+        <div className="absolute right-6 bottom-8 left-6 flex justify-between">
+          <p className="lbl text-ink/50">[ just for fun ]</p>
+          <p className="lbl text-ink/50">working from jakarta</p>
+        </div>
+      </div>
+    );
+
   /* ---------- reduced motion: 11 layar statis ---------- */
   if (reduced) {
     return (
@@ -321,6 +436,7 @@ export default function WorksHuy() {
         {WORKS.map((_, j) => (
           <div key={j}>{renderStage(j, false)}</div>
         ))}
+        {menuOverlay}
       </section>
     );
   }
@@ -329,6 +445,7 @@ export default function WorksHuy() {
   return (
     <section ref={sectionRef} className="relative" aria-label="Selected works — scroll untuk ganti proyek">
       <div ref={stageRef}>{renderStage(idx, true)}</div>
+      {menuOverlay}
     </section>
   );
 }

@@ -338,3 +338,19 @@ section yang kita punya, jadikan 1 section."
   11×100svh persis (pin spacer 10×100svh + 1 layar).
 - Header (ABOUT/CONTACT/JOURNAL) = pintu ke halaman lain — sesuai "halaman
   halaman lainnya tetap".
+
+## 14. v2.6 — Header ala HUYMI + hamburger mobile (round 9, 2026-09-11)
+
+**Keputusan user:** "Di mobile pakai hamburger aja. Dan belum persis sama,
+headernya sama kayak huymi juga."
+
+- `Header.tsx` (header tipis + jam JKT) **tidak di-render di home**
+  (`pathname === '/' → return null`); halaman lain tetap memakai.
+- Chrome HUYMI kini bagian kanvas `WorksHuy`:
+  - wordmark `WAH:ANGGAAA` Heros bold kiri-atas (klik = scroll ke atas)
+  - blok `menu` + bar hitam vertikal + list serif 19px:
+    `→ work. / about. / contact. / journal.` (arrow = halaman aktif)
+  - `[ just for fun ] / working from jakarta` kanan-atas
+- Mobile: hamburger 3 garis kanan-atas → **overlay penuh** bg paper:
+  link serif 38px, `×` tutup, `[ just for fun ] / working from jakarta`
+  bawah. Navigasi overlay = `go()` + tutup (curtain z-90 di atas overlay z-80).

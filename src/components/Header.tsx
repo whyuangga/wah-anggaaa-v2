@@ -25,6 +25,10 @@ export default function Header() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // Home = satu kanvas HUYMI — header-nya sudah jadi bagian kanvas
+  // (wordmark + blok MENU ala HUYMI di WorksHuy). Jangan render di sini.
+  if (pathname === '/') return null;
+
   return (
     <motion.header
       initial={{ opacity: 0 }}

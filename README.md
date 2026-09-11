@@ -54,7 +54,8 @@ zero invoices
 ### `/` — Home (SATU KANVAS)
 
 Home sengaja **satu kanvas saja** (ala HUYMI) — tidak ada hero tagline,
-manifesto, say hi, atau footer di home. Kanvas = Works index:
+manifesto, say hi, atau footer di home. Kanvas = Works index + **chrome
+header ala HUYMI**:
 
 - **foto proyek** di tengah, miring ±2°, **crossfade + drift vertikal**
   antar proyek (warna asli penuh)
@@ -65,6 +66,12 @@ manifesto, say hi, atau footer di home. Kanvas = Works index:
 - kiri atas: teks vertikal `portfolio '26` + `11 works — jakarta, id`
 - kanan atas: `[ just for fun ] / working from jakarta`
 - kiri bawah: `scroll ↓`; kanan bawah: dua kotak ■ □
+- **header HUYMI**: wordmark `WAH:ANGGAAA` kiri-atas, blok `menu` + bar
+  hitam vertikal + list serif (`→ work. / about. / contact. / journal.`),
+  `[ just for fun ] / working from jakarta` kanan-atas. Header tipis versi
+  lama (jam JKT) tidak di-render di home — halaman lain tetap memakainya.
+  **Mobile: hamburger** → overlay penuh (link serif raksasa, `×` tutup,
+  info studio di bawah).
 - **panah lingkaran** = proyek berikutnya; klik list = lompat proyek;
   keyboard ↑↓←→ saat pinned
 - di bawah foto: `case study →` (buka case) + `live website ↗`
