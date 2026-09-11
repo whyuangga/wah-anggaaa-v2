@@ -5,10 +5,11 @@ tipografis, dan editorial**. Isinya 11 karya fiktif: "taman bermain satu orang":
 brand khayalan yang digarap serius. Identitas visual v2.3: paper `#EAE8E1` +
 ink `#0D0D0C`, **2 font saja** — display condensed raksasa (Heros Cn) + serif aksen
 (Junicode Cn) — **tanpa garis di mana pun**, gambar berwarna penuh. **Home =
-satu kanvas ala HUYMI**: foto proyek di tengah (miring kecil), list semua
-proyek di kanan (aktif menyala), meta kiri, angka `NR. 001 / 011` raksasa —
-**scroll vertikal bergeser antar proyek** (foto crossfade + drift, list
-bergulir, snap ke tiap proyek). Halaman lainnya (about/contact/journal/case
+satu kanvas ala HUYMI**: kartu reel portrait 5:6 di tengah (aktif tegak 0°,
+tetangga ngintip miring ±5,5°), list judul semua proyek di kanan (aktif
+menyala), meta kiri, angka `NR. 001 / 011` raksasa — **scroll vertikal
+menggeser reel secara LOOPING tanpa ujung** (011 → 001 → 002 mulus dua
+arah, list & foto satu sumbu, snap ke tiap proyek). Halaman lainnya (about/contact/journal/case
 study) tetap utuh, diakses via header. Intro: tagline scramble-decode. Dibangun sebagai static SPA yang jalan identik di GitHub Pages
 maupun Vercel dari codebase yang sama.
 
@@ -147,19 +148,25 @@ fallback `prefers-reduced-motion` di setiap bagian.
 ### 1. Works — index ala HUYMI (`src/components/WorksHuy.tsx`)
 
 - Section 100svh di-**pin** ScrollTrigger (`start: top top`,
-  `end: +=(N-1)×viewHeight`, `scrub: 0.6`); tween target = **proxy object**
-  `{ f: 0 → N-1 }` — `onUpdate` mengubah gaya DOM langsung (transform
-  crossfade foto, translateY list, state React hanya untuk angka/meta/list
-  aktif saat `round(f)` berganti).
-- **Foto**: 11 `<img>` ditumpuk di tengah; per frame `opacity = 1-|f-j|`,
-  `y = -d×120px`, `rotate ±2°` (tilt bergantian), scale halus → crossfade +
-  drift ala HUYMI.
-- **List reel**: item aktif selalu di tengah (`translateY = h/2 - (f+0.5)×ITEM`);
-  **transform list milik GSAP** — tanpa style prop React (re-render React
-  bakal menimpa animasi di tengah scrub).
-- **Snap manual**: scroll idle ±160ms → `scrollTo smooth` ke langkah terdekat.
-  (ScrollTrigger `snap` bawaan di-kill: meleset beberapa langkah di setup ini.)
-- Tombol panah, klik list, keyboard = `scrollTo` ke posisi pin per indeks.
+  `end: +=2N×viewHeight` — dua putaran penuh, `scrub: 0.6`); `onUpdate`
+  mengubah gaya DOM langsung; state React hanya untuk angka/meta/list aktif
+  saat indeks tampil (`round(f) mod N`) berganti. Di luar rentang pin lepas
+  natural — tanpa jebakan scroll.
+- **Reel looping (jarak-modulo)**: posisi tiap kartu = `d = ((j−f+N/2) mod
+  N) − N/2` (jarak signed TERDEKAT) → `translateY(d×0.55h)` +
+  `rotate(−5.5°×clamp(d,−1,1))` — kartu tengah tegak 0°, tetangga ngintip
+  miring dan melurus saat masuk; `visibility |d|≤1.6`; `zIndex` aktif di
+  atas tetangga (chrome diberi `z-10` agar angka NR tak tertutup).
+- **List reel**: 3 lipatan WORKS; item aktif selalu di tengah
+  (`translateY = h/2 − clip − (f+N+0.5)×ITEM`) — tidak pernah bolong saat
+  wrap; **transform list milik GSAP** — tanpa style prop React (re-render
+  bakal menimpa animasi di tengah scrub); style awal slot HARUS deterministik
+  (f0=0), bukan ikut `idx`.
+- **Snap manual**: scroll idle ±160ms → `scrollTo smooth` ke langkah
+  terdekat (1/2N). (ScrollTrigger `snap` bawaan di-kill: meleset beberapa
+  langkah di setup ini.)
+- Klik list / keyboard = `scrollTo` ke **putaran terdekat** (`min |k−f|`
+  untuk `k ≡ i (mod N)`) — tidak pernah rewind jauh.
 - Setup/cleanup di **`useLayoutEffect`** (ScrollTrigger pin mem-wrap section
   dengan `pin-spacer`; kill lewat effect pasif → React gagal `removeChild`).
 - Reduced motion: 11 layar statis berurutan (tanpa pin/tween).
@@ -181,9 +188,9 @@ Guard `busyRef` anti navigasi ganda. Reduced motion: crossfade 0,12 dtk.
 
 - **Line-mask** (footer, case study): `clip` via overflow-hidden + `y: 112% → 0`,
   stagger.
-- **Crossfade works** (home): 11 foto ditumpuk, per frame `opacity = 1-|f-j|`
-  + drift `y = -d×120px` + tilt ±2° — mutasi `style` langsung, tanpa re-render
-  per frame (state React hanya berganti saat `round(f)` ganti).
+- **Reel home**: mutasi `style` langsung per frame (translateY/rotate
+  jarak-modulo ala loop) — tanpa re-render; state React hanya berganti saat
+  indeks tampil `round(f) mod N` ganti.
 - **Drift About** (ala Inspirux): dua baris konvergen `x: ±30% → 0` dengan GSAP
   `matchMedia` + ScrollTrigger scrub.
 - **Footer cascade**: huruf naik per huruf saat masuk viewport + wave yoyo saat hover.
