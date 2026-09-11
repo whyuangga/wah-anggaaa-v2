@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   type MouseEvent,
   type ReactNode,
@@ -36,6 +37,14 @@ export function TransitionProvider({ children }: { children: ReactNode }) {
   const contentRef = useRef<HTMLDivElement>(null);
   const curtainRef = useRef<HTMLDivElement>(null);
 
+  // Posisi awal curtain (di bawah layar) harus di-set via GSAP — BUKAN inline
+  // style. Inline `translateY(100%)` akan di-flatten GSAP jadi `y: 900px` dan
+  // bertumpuk dengan tween yPercent → curtain mentok di posisi "menutup layar"
+  // setelah transisi pertama (halaman jadi kertas kosong).
+  useLayoutEffect(() => {
+    gsap.set(curtainRef.current, { y: 0, yPercent: 100 });
+  }, []);
+
   const go = useCallback<GoFn>(
     (to: string) => {
       if (busyRef.current) return;
@@ -65,8 +74,9 @@ export function TransitionProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      // normalisasi transform curtain sebelum timeline (anti-sisa tween)
+      gsap.set(curtain, { y: 0, yPercent: 100 });
       const tl = gsap.timeline({ onComplete: finish });
-      tl.set(curtain, { yPercent: 0, immediateRender: false });
       tl.fromTo(curtain, { yPercent: 100 }, { yPercent: 0, duration: 0.5, ease: 'power2.inOut' }, 0);
       tl.to(el, { opacity: 0, duration: 0.3, ease: 'power2.in' }, 0);
       tl.add(() => {
@@ -102,7 +112,6 @@ export function TransitionProvider({ children }: { children: ReactNode }) {
         ref={curtainRef}
         aria-hidden
         className="pointer-events-none fixed inset-0 z-[90] bg-paper will-change-transform"
-        style={{ transform: 'translateY(100%)' }}
       />
     </GoContext.Provider>
   );

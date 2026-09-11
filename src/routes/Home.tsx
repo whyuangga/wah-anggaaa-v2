@@ -2,7 +2,7 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { motion } from 'motion/react';
 import Footer from '../components/Footer';
 import Seo from '../components/Seo';
-import WorksIndex from '../components/WorksIndex';
+import WorksDeck from '../components/WorksDeck';
 import { TLink } from '../lib/transition';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -135,8 +135,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ============ SELECTED WORKS — THE INDEX ============ */}
-      <WorksIndex />
+      {/* ============ SELECTED WORKS — DECK (carousel full-bleed) ============ */}
+      <WorksDeck />
 
       {/* ============ MANIFESTO ============ */}
       <section className="px-5 md:px-10 pt-32 md:pt-48 pb-8">

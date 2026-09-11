@@ -2,11 +2,13 @@
 
 Portfolio satu halaman (+ About, Contact, 11 case study, Jurnal) bertema **terang,
 tipografis, dan editorial**. Isinya 11 karya fiktif: "taman bermain satu orang":
-brand khayalan yang digarap serius. Identitas visual v2.2: paper `#EAE8E1` +
+brand khayalan yang digarap serius. Identitas visual v2.3: paper `#EAE8E1` +
 ink `#0D0D0C`, **2 font saja** — display condensed raksasa (Heros Cn) + serif aksen
 (Junicode Cn) — **tanpa garis di mana pun**, gambar berwarna penuh, hero poster 3
-treatment, dan signature **THE INDEX**: daftar karya tipografis raksasa full-width
-dengan **floating image preview** yang mengikuti kursor. Intro: tagline
+treatment, dan signature **WORKS DECK**: carousel full-bleed ala HUYMI — 11 slide
+foto karya raksasa yang di-*pin* dan bergeser horizontal mengikuti scroll vertikal,
+judul serif raksasa di bawah tengah, prev/next di pojok, counter indeks raksasa,
+teks putih *mix-blend-difference* (auto-invert di atas foto apa pun). Intro: tagline
 scramble-decode. Dibangun sebagai static SPA yang jalan identik di GitHub Pages
 maupun Vercel dari codebase yang sama.
 
@@ -55,12 +57,19 @@ zero invoices
    ZERO INVOICES.`) dengan reveal line-mask, role serif italic
    `Designer & Creative Developer`, label `[ just for fun ]` `[ jakarta — wib ]`,
    CTA `say hi ↗` + `[ about ]`.
-2. **Selected Works — THE INDEX (signature)** — daftar tipografis full-width:
-   11 baris `indeks · JUDUL RAKSASA · kategori (serif italic) · tahun`. Hover baris:
-   judul menyala + bergeser, dan **floating preview** (thumbnail warna asli,
-   lerp mengikuti kursor + rotasi mengikuti kecepatan) muncul di sampingnya.
-   Label kanan atas menampilkan `001 / 011` yang mengikuti baris aktif.
-   Klik baris = buka case study. Mobile: baris ringkas, tanpa floating preview.
+2. **Selected Works — WORKS DECK (signature)** — carousel pinned ala HUYMI:
+   section 100svh di-*pin* (GSAP ScrollTrigger), scroll vertikal → track
+   horizontal (scrub 1). Tiap slide: **foto karya full-bleed warna asli** + dim
+   flat ink 30% + semua overlay teks putih **mix-blend-difference** (auto-invert,
+   terbaca di foto terang & gelap):
+   - kiri bawah: **counter raksasa** `001 / 011` + `scroll →`
+   - tengah bawah: **judul serif raksasa** (Junicode) + kategori + `view case study →`
+   - pojok kiri/kanan: `← prev` / `next →` dengan nama karya di sebelahnya
+   - kiri atas: `case 001 — '26`, role · stack, `live website →`
+   - kanan atas: `[ just for fun ] · working from jakarta`
+   - tengah atas: 11 tick progress
+   Navigasi: scroll, tombol prev/next, keyboard ← → saat pinned.
+   Klik judul = buka case study. Reduced motion: horizontal scroll-snap tanpa pin.
 3. **Manifesto** — kalimat besar serif italic, opacity **kata-per-kata mengikuti
    scroll** (scrub rAF, mutasi DOM langsung).
 4. **Say Hi** — link raksasa full-width, hover shift → `/contact`.
@@ -121,16 +130,20 @@ frontmatter = langsung terbit.
 Semua animasi memakai properti murah-GPU (**transform & opacity saja**), dengan
 fallback `prefers-reduced-motion` di setiap bagian.
 
-### 1. The Index + floating preview (`src/components/WorksIndex.tsx`)
+### 1. Works Deck — carousel pinned (`src/components/WorksDeck.tsx`)
 
-- Daftar 11 baris full-width; hover → judul `opacity 50% → 100%` + `translate-x`
-  + label `001 / 011` update (state React hanya indeks aktif).
-- **Floating preview**: `<div fixed>` berisi thumbnail (swap per karya, `key`
-  remount). Loop rAF tunggal: posisi preview di-**lerp** ke kursor (faktor 0.14),
-  rotasi ±9° dihitung dari kecepatan horizontal mouse (decay lerp). Posisi di-
-  clamp agar tak keluar viewport. `pointer-events: none`, opacity in/out 300ms.
-- Hanya di `pointer: fine` (desktop); mobile = interaksi baris langsung.
-- Mutasi `style.transform` langsung → 60fps, tanpa re-render per frame.
+- Section 100svh di-**pin** ScrollTrigger (`start: top top`, `end: +=(N-1)×vw`,
+  `scrub: 1`); track `<div flex>` di-translate-x `0 → -(N-1)×innerWidth`.
+- 11 slide `w-screen`: img `object-cover` full-bleed (blur-up placeholder),
+  dim flat `bg-ink/30` (bukan gradient), overlay teks putih `mix-blend-difference`.
+- Tombol prev/next & keyboard ← → = `window.scrollTo` ke posisi pin yang
+  dihitung dari indeks (bukan mutasi tween) → sinkron sempurna dengan scrub.
+- Setup/cleanup di **`useLayoutEffect`**: ScrollTrigger pin mem-wrap section
+  dengan `pin-spacer`; kalau trigger di-kill lewat effect pasif (terlambat),
+  React gagal `removeChild` saat unmount.
+- Reduced motion: tanpa pin — wrapper `overflow-x-auto snap-x`, slide `snap-start`.
+- `onUpdate` hanya menulis `activeRef` (untuk keyboard) — slide menampilkan
+  counter/tick statisnya sendiri, nol re-render per frame.
 
 ### 2. Intro scramble (`src/components/Intro.tsx`)
 
@@ -180,7 +193,7 @@ drag-rail), Inspirux (drift), Onoera (ritme intro).
 ## Struktur Proyek
 
 ```
-├── PLAN.md                  → spesifikasi redesign v2.1 (acuan kerja)
+├── PLAN.md                  → spesifikasi redesign v2.x (acuan kerja)
 ├── public/
 │   ├── _redirects           → (cadangan redirect SPA)
 │   ├── og.jpg               → preview share 1200×630 (paper + ink)
@@ -194,10 +207,10 @@ drag-rail), Inspirux (drift), Onoera (ritme intro).
     │   ├── Intro.tsx        → intro terminal scramble + tirai
     │   ├── Header.tsx       → header tipis (tanpa border; bg paper saat scroll)
     │   ├── Footer.tsx       → footer raksasa cascade + wave + jam + status studio
-    │   ├── WorksIndex.tsx   → the index: daftar raksasa + floating preview (signature)
+    │   ├── WorksDeck.tsx    → works deck: carousel full-bleed pinned (signature)
     │   └── Seo.tsx          → title/desc/OG kanonis + JSON-LD per route
     ├── routes/
-    │   ├── Home.tsx         → hero + drag rail + manifesto + say hi
+    │   ├── Home.tsx         → hero + works deck + manifesto + say hi
     │   ├── About.tsx        → portrait + bio + capabilities + recognition + colophon
     │   ├── Contact.tsx      → say hi + email + sosial + generator brand
     │   ├── WorkCase.tsx     → case study per karya (/works/:slug)

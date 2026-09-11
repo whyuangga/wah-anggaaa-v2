@@ -258,3 +258,41 @@ src/
 | Footer | Brand word cascade (mirip v1) | *just for fun.* serif italic raksasa, line-mask |
 | Case study | Label mono + meta grid | Label `.lbl`, kategori serif italic, **ghost number outline** di belakang judul |
 | Tetap | paper/ink, tanpa garis, gambar warna asli, portrait OK, scramble, curtain | sama |
+
+## 11. v2.3 — Works Deck + fix bug navigasi (round 6, 2026-09-11)
+
+**Keputusan user:** (1) benerin dulu bug "engga bisa masuk halaman lain" di
+deploy Vercel; (2) bagian works jadi **carousel seperti reference HUYMI**
+(foto full-bleed, judul serif raksasa bawah tengah, prev/next pojok, counter
+raksasa); (3) v2.2 "masih mirip banget" → deck menggantikan The Index.
+
+### Bug navigasi — root cause & fix
+- **Gejala:** klik link halaman lain → URL berubah tapi layar kertas kosong.
+- **Root cause:** div curtain transisi punya inline style
+  `transform: translateY(100%)`. GSAP mem-flatten `%` itu jadi `y: 900px`
+  (piksel) saat parse, lalu tween `yPercent` bertumpuk di atasnya:
+  posisi akhir `-100% + 900px = 0` → curtain **menutup seluruh layar**
+  (bg paper, z-90, pointer-events-none) setelah transisi pertama.
+- **Fix:** hilangkan inline transform; posisi awal curtain di-set via
+  `gsap.set(curtain, { y: 0, yPercent: 100 })` di `useLayoutEffect`, plus
+  normalisasi ulang di awal tiap `go()`. Semua transform curtain kini satu
+  representasi GSAP.
+- **Verifikasi:** puppeteer headless — navigasi beruntun 5× (desktop +
+  mobile), deep-link semua halaman, screenshot konten terlihat.
+
+### Works Deck (menggantikan WorksIndex)
+- Section 100svh **pin** ScrollTrigger; scroll vertikal → track horizontal
+  (scrub 1, `end += (N-1)×innerWidth`).
+- Slide: foto full-bleed warna asli + **dim flat ink 30%** (bukan gradient) +
+  overlay teks putih **mix-blend-difference** (auto-invert di foto terang/gelap).
+- Layout per slide (patokan HUYMI): counter raksasa kiri bawah `NNN / 011`,
+  judul **Junicode** raksasa bawah tengah, prev/next + nama karya di pojok,
+  meta kiri atas (case · role/stack · live website →), kanan atas
+  `[ just for fun ] · working from jakarta`, 11 tick progress atas tengah.
+- Navigasi: scroll, tombol prev/next, keyboard ← → saat pinned (via
+  `activeRef`, tanpa re-render per frame). Klik judul → case study.
+- **Pitfall terdokumentasi:** ScrollTrigger pin mem-wrap trigger dengan
+  `pin-spacer`; cleanup trigger harus di **`useLayoutEffect`** (sebelum React
+  removeChild di commit) → kalau pakai `useEffect` muncul
+  `NotFoundError: removeChild` saat pindah halaman.
+- Reduced motion: horizontal scroll-snap, tanpa pin.
