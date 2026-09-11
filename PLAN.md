@@ -354,3 +354,23 @@ headernya sama kayak huymi juga."
 - Mobile: hamburger 3 garis kanan-atas → **overlay penuh** bg paper:
   link serif 38px, `×` tutup, `[ just for fun ] / working from jakarta`
   bawah. Navigasi overlay = `go()` + tutup (curtain z-90 di atas overlay z-80).
+
+## 15. v2.7 — Reel foto vertikal + rapian chrome (round 10, 2026-09-11)
+
+**Keputusan user (dari 3 screenshot HUYMI tambahan):**
+1. "kartunya kamu tumpuk" — foto harus seperti HUYMI: **reel vertikal**,
+   foto sebelumnya ngintip di atas, berikutnya di bawah (miring), bukan
+   crossfade tumpuk di posisi sama.
+2. Hapus tombol panah lingkaran (mobile & desktop).
+3. Mobile: hamburger di **kiri**, teks WAH:ANGGAAA dihapus.
+4. Panah "→" di menu = **efek hover** (slide-in), bukan permanen.
+
+### Implementasi
+- Reel: tiap foto = slot `h-[36svh] aspect-[5/4]` absen di tengah;
+  `translateY((j - f) × 0.42 × h) rotate(tilt)`; `visibility` saat
+  `|j - f| ≥ 1.6`. Link `case study / live website` di `top calc(50% + 20svh)`.
+- Panah menu: plain CSS `.menu-arrow` + `.menu-item:hover .menu-arrow`
+  di index.css — karena interaksi `group-hover` + `.opacity-0` di cascade
+  Tailwind v4 terbukti tidak menang (di-debug via CSSOM: kedua rule match,
+  `.opacity-0` tetap menang).
+- Wordmark `hidden md:block`; hamburger `left-5`; circle button dihapus.

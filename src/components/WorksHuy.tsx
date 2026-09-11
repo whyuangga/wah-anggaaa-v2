@@ -26,7 +26,7 @@ const tilt = (j: number) => (j % 2 === 0 ? -2.2 : 1.8);
 export default function WorksHuy() {
   const go = useGo();
   const sectionRef = useRef<HTMLElement>(null);
-  const imgRefs = useRef<(HTMLImageElement | null)[]>([]);
+  const slotRefs = useRef<(HTMLDivElement | null)[]>([]);
   const listRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const stRef = useRef<ScrollTrigger | null>(null);
@@ -67,16 +67,15 @@ export default function WorksHuy() {
 
     const apply = (f: number) => {
       const h = hRef.current;
-      // foto: crossfade + drift vertikal + scale halus
-      imgRefs.current.forEach((img, j) => {
-        if (!img) return;
-        const d = f - j;
-        const o = Math.max(0, 1 - Math.abs(d));
-        img.style.opacity = o.toFixed(3);
-        img.style.visibility = o <= 0.002 ? 'hidden' : 'visible';
-        img.style.transform = `translateY(${(-d * 120).toFixed(1)}px) rotate(${tilt(
+      const spacing = h * 0.42; // jarak antar foto di reel
+      // foto: reel vertikal — aktif di tengah, tetangga ngintip atas/bawah
+      slotRefs.current.forEach((slot, j) => {
+        if (!slot) return;
+        const d = Math.abs(f - j);
+        slot.style.visibility = d < 1.6 ? 'visible' : 'hidden';
+        slot.style.transform = `translateY(${((j - f) * spacing).toFixed(1)}px) rotate(${tilt(
           j,
-        )}deg) scale(${(1 - Math.min(0.08, Math.abs(d) * 0.08)).toFixed(3)})`;
+        )}deg)`;
       });
       // list: item aktif selalu di tengah (dikoreksi clip atas reel)
       if (listRef.current) {
@@ -185,7 +184,7 @@ export default function WorksHuy() {
         <button
           onClick={goTop}
           aria-label="wah:anggaaa — ke atas"
-          className="absolute top-5 left-5 z-10 cursor-pointer font-display text-[15px] font-bold uppercase tracking-[0.05em] transition-opacity hover:opacity-70 md:top-6 md:left-7 md:text-[22px]"
+          className="absolute top-6 left-7 z-10 hidden cursor-pointer font-display text-[22px] font-bold uppercase tracking-[0.05em] transition-opacity hover:opacity-70 md:block"
         >
           WAH:ANGGAAA
         </button>
@@ -196,38 +195,35 @@ export default function WorksHuy() {
             <span aria-hidden className="mt-2 block h-11 w-[3px] bg-ink" />
             <div>
               <p className="lbl mb-2.5 text-ink/55">menu</p>
+              {/* panah "→" = efek HOVER (slide-in), bukan permanen */}
               <nav className="flex flex-col items-start gap-0.5 font-serif text-[19px] leading-[1.15]">
-                <button onClick={goTop} className="cursor-pointer text-ink">
-                  → work.
-                </button>
-                <button
-                  onClick={() => go('/about')}
-                  className="cursor-pointer text-ink/55 transition-colors hover:text-ink"
-                >
-                  about.
-                </button>
-                <button
-                  onClick={() => go('/contact')}
-                  className="cursor-pointer text-ink/55 transition-colors hover:text-ink"
-                >
-                  contact.
-                </button>
-                <button
-                  onClick={() => go('/journal')}
-                  className="cursor-pointer text-ink/55 transition-colors hover:text-ink"
-                >
-                  journal.
-                </button>
+                {[
+                  { label: 'work.', act: () => goTop() },
+                  { label: 'about.', act: () => go('/about') },
+                  { label: 'contact.', act: () => go('/contact') },
+                  { label: 'journal.', act: () => go('/journal') },
+                ].map((m) => (
+                  <button
+                    key={m.label}
+                    onClick={m.act}
+                    className="menu-item flex cursor-pointer items-center text-ink/55 transition-colors hover:text-ink"
+                  >
+                    <span aria-hidden className="menu-arrow mr-1.5 inline-block w-4 text-left">
+                      →
+                    </span>
+                    {m.label}
+                  </button>
+                ))}
               </nav>
             </div>
           </div>
         </div>
 
-        {/* chrome HUYMI — hamburger (mobile) */}
+        {/* chrome HUYMI — hamburger (mobile, di KIRI) */}
         <button
           onClick={() => setMenuOpen(true)}
           aria-label="buka menu"
-          className="absolute top-5 right-5 z-20 flex h-10 w-10 cursor-pointer flex-col items-center justify-center gap-[5px] md:hidden"
+          className="absolute top-5 left-5 z-20 flex h-10 w-10 cursor-pointer flex-col items-center justify-center gap-[5px] md:hidden"
         >
           <span className="h-[2px] w-6 bg-ink" />
           <span className="h-[2px] w-6 bg-ink" />
@@ -240,47 +236,49 @@ export default function WorksHuy() {
           <p className="lbl mt-0.5 text-ink/45">working from jakarta</p>
         </div>
 
-        {/* foto tengah (crossfade stack) */}
-        <div className="pointer-events-none absolute left-1/2 top-1/2 w-[min(80vw,470px)] -translate-x-1/2 -translate-y-1/2">
-          <div className="relative aspect-video shadow-[0_24px_60px_-28px_rgba(13,13,12,0.4)]">
-            {WORKS.map((im, j) => (
-              <span key={j} aria-hidden className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${im.blur})` }} />
-            ))}
-            {WORKS.map((im, j) => (
+        {/* foto: REEL VERTIKAL ala HUYMI — foto aktif di tengah, yang
+            sebelumnya ngintip di atas, yang berikutnya di bawah (miring) */}
+        <div className="pointer-events-none absolute inset-0">
+          {WORKS.map((im, j) => (
+            <div
+              key={im.index}
+              ref={
+                animated
+                  ? (el) => {
+                      slotRefs.current[j] = el;
+                    }
+                  : undefined
+              }
+              className="absolute inset-0 m-auto h-[36svh] max-h-[430px] aspect-[5/4] max-w-[80vw]"
+              style={
+                animated
+                  ? { visibility: j === 0 ? 'visible' : 'hidden', transform: `rotate(${tilt(0)}deg)` }
+                  : {
+                      visibility: Math.abs(j - i) < 1.6 ? 'visible' : 'hidden',
+                      transform: `translateY(${((j - i) * 0.42 * (typeof window !== 'undefined' ? window.innerHeight : 900)).toFixed(
+                        0,
+                      )}px) rotate(${tilt(j)}deg)`,
+                    }
+              }
+            >
+              <span
+                aria-hidden
+                className="absolute inset-0 bg-cover bg-center"
+                style={{ backgroundImage: `url(${im.blur})` }}
+              />
               <img
-                key={im.index}
-                ref={
-                  animated
-                    ? (el) => {
-                        imgRefs.current[j] = el;
-                      }
-                    : undefined
-                }
                 src={im.thumb}
                 alt={im.title}
                 loading={j < 3 ? 'eager' : 'lazy'}
                 decoding="async"
-                className="absolute inset-0 h-full w-full object-cover"
-                style={
-                  animated
-                    ? {
-                        opacity: j === 0 ? 1 : 0,
-                        visibility: j === 0 ? 'visible' : 'hidden',
-                        transform: `rotate(${tilt(0)}deg)`,
-                      }
-                    : {
-                        opacity: j === i ? 1 : 0,
-                        visibility: j === i ? 'visible' : 'hidden',
-                        transform: `rotate(${tilt(j)}deg)`,
-                      }
-                }
+                className="absolute inset-0 h-full w-full object-cover shadow-[0_24px_60px_-28px_rgba(13,13,12,0.4)]"
               />
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
 
-        {/* link di bawah foto */}
-        <div className="absolute left-1/2 top-[calc(50%+132px)] flex -translate-x-1/2 items-center gap-5 md:top-[calc(50%+158px)]">
+        {/* link di bawah foto aktif */}
+        <div className="absolute top-[calc(50%+20svh)] left-1/2 flex -translate-x-1/2 items-center gap-5">
           <button
             onClick={() => go(`/works/${wk.slug}`)}
             className="lbl cursor-pointer whitespace-nowrap text-ink transition-opacity hover:opacity-60"
@@ -376,14 +374,6 @@ export default function WorksHuy() {
           <span className="h-2.5 w-2.5 bg-ink/25" />
         </div>
 
-        {/* panah lingkaran = proyek berikutnya */}
-        <button
-          onClick={() => jump(Math.min(N - 1, i + 1))}
-          aria-label="Proyek berikutnya"
-          className="absolute right-4 bottom-24 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-ink/50 text-ink/80 transition-colors hover:bg-ink hover:text-paper md:left-[67%] md:right-auto md:top-[54%] md:bottom-auto md:h-14 md:w-14"
-        >
-          <span aria-hidden className="text-lg">→</span>
-        </button>
       </div>
     );
   };
@@ -402,25 +392,27 @@ export default function WorksHuy() {
             ×
           </button>
         </div>
+        {/* panah "→" = efek HOVER (slide-in), sama seperti menu desktop */}
         <nav className="mt-16 flex flex-col gap-4 px-6 font-serif text-[38px] leading-tight">
-          <button
-            onClick={() => {
-              setMenuOpen(false);
-              goTop();
-            }}
-            className="cursor-pointer text-left text-ink"
-          >
-            → work.
-          </button>
-          <button onClick={() => nav('/about')} className="cursor-pointer text-left text-ink/70 hover:text-ink">
-            about.
-          </button>
-          <button onClick={() => nav('/contact')} className="cursor-pointer text-left text-ink/70 hover:text-ink">
-            contact.
-          </button>
-          <button onClick={() => nav('/journal')} className="cursor-pointer text-left text-ink/70 hover:text-ink">
-            journal.
-          </button>
+          {[
+            { label: 'work.', act: () => { setMenuOpen(false); goTop(); }, top: true },
+            { label: 'about.', act: () => nav('/about') },
+            { label: 'contact.', act: () => nav('/contact') },
+            { label: 'journal.', act: () => nav('/journal') },
+          ].map((m) => (
+            <button
+              key={m.label}
+              onClick={m.act}
+              className={`menu-item flex cursor-pointer items-center text-left transition-colors ${
+                m.top ? 'text-ink' : 'text-ink/70 hover:text-ink'
+              }`}
+            >
+              <span aria-hidden className="menu-arrow mr-2 inline-block w-7 text-left">
+                →
+              </span>
+              {m.label}
+            </button>
+          ))}
         </nav>
         <div className="absolute right-6 bottom-8 left-6 flex justify-between">
           <p className="lbl text-ink/50">[ just for fun ]</p>

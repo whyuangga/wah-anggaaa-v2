@@ -57,8 +57,9 @@ Home sengaja **satu kanvas saja** (ala HUYMI) — tidak ada hero tagline,
 manifesto, say hi, atau footer di home. Kanvas = Works index + **chrome
 header ala HUYMI**:
 
-- **foto proyek** di tengah, miring ±2°, **crossfade + drift vertikal**
-  antar proyek (warna asli penuh)
+- **foto proyek: REEL VERTIKAL ala HUYMI** — foto aktif di tengah, foto
+  sebelumnya ngintip di atas & yang berikutnya di bawah (miring ±2°),
+  bergerak bersama scroll (bukan crossfade tumpuk)
 - **list semua proyek** di kanan (kategori kecil + nama serif + blurb) —
   item aktif menyala, yang lain memudar; list **bergulir** mengikuti scroll
 - **meta** kiri tengah (role / launching / category, kolom label:value)
@@ -66,12 +67,14 @@ header ala HUYMI**:
 - kiri atas: teks vertikal `portfolio '26` + `11 works — jakarta, id`
 - kanan atas: `[ just for fun ] / working from jakarta`
 - kiri bawah: `scroll ↓`; kanan bawah: dua kotak ■ □
-- **header HUYMI**: wordmark `WAH:ANGGAAA` kiri-atas, blok `menu` + bar
-  hitam vertikal + list serif (`→ work. / about. / contact. / journal.`),
-  `[ just for fun ] / working from jakarta` kanan-atas. Header tipis versi
-  lama (jam JKT) tidak di-render di home — halaman lain tetap memakainya.
-  **Mobile: hamburger** → overlay penuh (link serif raksasa, `×` tutup,
-  info studio di bawah).
+- **header HUYMI**: wordmark `WAH:ANGGAAA` kiri-atas (desktop), blok
+  `menu` + bar hitam vertikal + list serif, `[ just for fun ] / working
+  from jakarta` kanan-atas. **Panah "→" di menu = efek hover** (slide-in,
+  CSS `.menu-arrow`) — bukan permanen. Header tipis versi lama (jam JKT)
+  tidak di-render di home — halaman lain tetap memakainya.
+  **Mobile: hamburger di KIRI** (wordmark dihilangkan) → overlay penuh
+  (link serif raksasa, `×` tutup, info studio di bawah).
+  (Tombol panah lingkaran lama sudah dihapus — navigasi = scroll/list/keyboard.)
 - **panah lingkaran** = proyek berikutnya; klik list = lompat proyek;
   keyboard ↑↓←→ saat pinned
 - di bawah foto: `case study →` (buka case) + `live website ↗`
