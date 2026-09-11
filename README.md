@@ -4,12 +4,12 @@ Portfolio satu halaman (+ About, Contact, 11 case study, Jurnal) bertema **teran
 tipografis, dan editorial**. Isinya 11 karya fiktif: "taman bermain satu orang":
 brand khayalan yang digarap serius. Identitas visual v2.3: paper `#EAE8E1` +
 ink `#0D0D0C`, **2 font saja** — display condensed raksasa (Heros Cn) + serif aksen
-(Junicode Cn) — **tanpa garis di mana pun**, gambar berwarna penuh, hero poster 3
-treatment, dan signature **WORKS — index ala HUYMI**: satu layar paper dengan
-foto proyek di tengah (miring kecil), list semua proyek di kanan (aktif
-menyala), meta kiri, angka `NR. 001 / 011` raksasa kiri bawah — **scroll
-vertikal bergeser antar proyek** (foto crossfade + drift, list bergulir,
-snap ke tiap proyek). Intro: tagline scramble-decode. Dibangun sebagai static SPA yang jalan identik di GitHub Pages
+(Junicode Cn) — **tanpa garis di mana pun**, gambar berwarna penuh. **Home =
+satu kanvas ala HUYMI**: foto proyek di tengah (miring kecil), list semua
+proyek di kanan (aktif menyala), meta kiri, angka `NR. 001 / 011` raksasa —
+**scroll vertikal bergeser antar proyek** (foto crossfade + drift, list
+bergulir, snap ke tiap proyek). Halaman lainnya (about/contact/journal/case
+study) tetap utuh, diakses via header. Intro: tagline scramble-decode. Dibangun sebagai static SPA yang jalan identik di GitHub Pages
 maupun Vercel dari codebase yang sama.
 
 > Status: iseng-iseng, just for fun. Bukan situs open-for-work.
@@ -51,34 +51,27 @@ zero invoices
 
 ±1,9 dtk, lalu tirai naik 0,75 dtk membuka hero. Reduced-motion: statis + cepat.
 
-### `/` — Home
+### `/` — Home (SATU KANVAS)
 
-1. **Hero** — tagline raksasa 3 baris uppercase (`IMAGINARY BRANDS. / REAL CRAFT. /
-   ZERO INVOICES.`) dengan reveal line-mask, role serif italic
-   `Designer & Creative Developer`, label `[ just for fun ]` `[ jakarta — wib ]`,
-   CTA `say hi ↗` + `[ about ]`.
-2. **Selected Works — index ala HUYMI (signature)** — satu layar 100svh
-   (persis layout reference HUYMI), **scroll vertikal = gonta-ganti proyek**:
-   - **foto proyek** di tengah, miring ±2°, **crossfade + drift vertikal**
-     antar proyek (warna asli penuh)
-   - **list semua proyek** di kanan (kategori kecil + nama serif + blurb) —
-     item aktif menyala, yang lain memudar; list **bergulir** mengikuti scroll
-   - **meta** kiri tengah (role / launching / category, kolom label:value)
-   - **angka raksasa** kiri bawah: `nr.` + `001` (Heros bold) + `/ 011`
-   - kiri atas: teks vertikal `portfolio '26` + `11 works — jakarta, id`
-   - kanan atas: `[ just for fun ] / working from jakarta`
-   - kiri bawah: `scroll ↓`; kanan bawah: dua kotak ■ □
-   - **panah lingkaran** = proyek berikutnya; klik list = lompat proyek;
-     keyboard ↑↓←→ saat pinned
-   - di bawah foto: `case study →` (buka case) + `live website ↗`
-   Implementasi: section di-*pin* (ScrollTrigger, `scrub 0.6`, proxy object),
-   **snap manual** saat scroll idle ±160ms (snap bawaan GSAP tidak stabil di
-   setup ini). Reduced motion: 11 layar statis berurutan, tanpa pin.
-3. **Manifesto** — kalimat besar serif italic, opacity **kata-per-kata mengikuti
-   scroll** (scrub rAF, mutasi DOM langsung).
-4. **Say Hi** — link raksasa full-width, hover shift → `/contact`.
-5. **Footer** — serif italic raksasa *just for fun.* (line-mask reveal),
-   jam WIB live, status studio kocak.
+Home sengaja **satu kanvas saja** (ala HUYMI) — tidak ada hero tagline,
+manifesto, say hi, atau footer di home. Kanvas = Works index:
+
+- **foto proyek** di tengah, miring ±2°, **crossfade + drift vertikal**
+  antar proyek (warna asli penuh)
+- **list semua proyek** di kanan (kategori kecil + nama serif + blurb) —
+  item aktif menyala, yang lain memudar; list **bergulir** mengikuti scroll
+- **meta** kiri tengah (role / launching / category, kolom label:value)
+- **angka raksasa** kiri bawah: `nr.` + `001` (Heros bold) + `/ 011`
+- kiri atas: teks vertikal `portfolio '26` + `11 works — jakarta, id`
+- kanan atas: `[ just for fun ] / working from jakarta`
+- kiri bawah: `scroll ↓`; kanan bawah: dua kotak ■ □
+- **panah lingkaran** = proyek berikutnya; klik list = lompat proyek;
+  keyboard ↑↓←→ saat pinned
+- di bawah foto: `case study →` (buka case) + `live website ↗`
+- **scroll vertikal = gonta-ganti proyek**: section di-pin (ScrollTrigger,
+  `scrub 0.6`, proxy object), **snap manual** saat scroll idle ±160ms.
+  Reduced motion: 11 layar statis berurutan, tanpa pin.
+- Halaman lain (about/contact/journal/case) tetap ada — via header.
 
 ### `/about`
 
@@ -169,10 +162,11 @@ Guard `busyRef` anti navigasi ganda. Reduced motion: crossfade 0,12 dtk.
 
 ### 4. Reveal & scrub
 
-- **Line-mask** hero/footer: `clip` via overflow-hidden + `y: 112% → 0`, stagger.
-- **Manifesto scrub**: loop rAF mengukur `getBoundingClientRect` **live tiap frame**
-  (kebal perubahan tinggi viewport oleh toolbar mobile) → opacity per kata
-  (0,12 → 1), mutasi `style` langsung.
+- **Line-mask** (footer, case study): `clip` via overflow-hidden + `y: 112% → 0`,
+  stagger.
+- **Crossfade works** (home): 11 foto ditumpuk, per frame `opacity = 1-|f-j|`
+  + drift `y = -d×120px` + tilt ±2° — mutasi `style` langsung, tanpa re-render
+  per frame (state React hanya berganti saat `round(f)` ganti).
 - **Drift About** (ala Inspirux): dua baris konvergen `x: ±30% → 0` dengan GSAP
   `matchMedia` + ScrollTrigger scrub.
 - **Footer cascade**: huruf naik per huruf saat masuk viewport + wave yoyo saat hover.
@@ -219,7 +213,7 @@ drag-rail), Inspirux (drift), Onoera (ritme intro).
     │   ├── WorksHuy.tsx     → works index ala HUYMI: satu layar, scroll = ganti proyek
     │   └── Seo.tsx          → title/desc/OG kanonis + JSON-LD per route
     ├── routes/
-    │   ├── Home.tsx         → hero + works index (HUYMI) + manifesto + say hi
+    │   ├── Home.tsx         → SATU KANVAS: hanya <WorksHuy /> (ala HUYMI)
     │   ├── About.tsx        → portrait + bio + capabilities + recognition + colophon
     │   ├── Contact.tsx      → say hi + email + sosial + generator brand
     │   ├── WorkCase.tsx     → case study per karya (/works/:slug)

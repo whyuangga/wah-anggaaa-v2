@@ -323,3 +323,18 @@ layout persis reference, scroll vertikal = ganti proyek. Konten = 11 karya kita.
   `idx` akan di-rewrite React tiap re-render dan menimpa animasi GSAP.
 - Foto: 11 img ditumpuk; `opacity = 1-|f-j|`, `y = -d×120`, `rotate ±2°`.
 - Reduced motion: 11 layar statis (tanpa pin).
+
+## 13. v2.5 — Home = satu kanvas (round 8, 2026-09-11)
+
+**Keputusan user:** "pakai 1 hero section nya aja tanpa section yang lain.
+cuma 1 kanvas aja, dan halaman halaman lainnya. Seperti HUYMI — hapus semua
+section yang kita punya, jadikan 1 section."
+
+- `Home.tsx` kini **hanya `<Seo /> + <WorksHuy />`** — hero poster tagline,
+  manifesto (ManifestoScrub), say hi, dan footer dihapus dari home.
+  (MaskLine & ManifestoScrub ikut dibuang dari file.)
+- Footer tetap ada untuk halaman lain (about/contact/journal/case/404).
+- Kanvas HUYMI jadi layar pertama setelah intro; panjang dokumen home =
+  11×100svh persis (pin spacer 10×100svh + 1 layar).
+- Header (ABOUT/CONTACT/JOURNAL) = pintu ke halaman lain — sesuai "halaman
+  halaman lainnya tetap".
