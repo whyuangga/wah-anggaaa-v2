@@ -7,10 +7,11 @@ ink `#0D0D0C`, **2 font saja** — display condensed raksasa (Heros Cn) + serif 
 (Junicode Cn) — **tanpa garis di mana pun**, gambar berwarna penuh. **Home =
 satu kanvas ala HUYMI**: kartu reel portrait 5:6 di tengah (aktif tegak 0°,
 tetangga ngintip miring ±5,5°), list judul semua proyek di kanan (aktif
-menyala), meta kiri, angka `NR. 001 / 011` raksasa — **scroll vertikal
+menyala), meta kiri, angka `NR. 1 / 11` raksasa — **scroll vertikal
 menggeser reel secara LOOPING tanpa ujung** (011 → 001 → 002 mulus dua
 arah, list & foto satu sumbu, snap ke tiap proyek). Halaman lainnya (about/contact/journal/case
-study) tetap utuh, diakses via header. Intro: tagline scramble-decode. Dibangun sebagai static SPA yang jalan identik di GitHub Pages
+study) tetap utuh, diakses via header. Intro: tagline scramble-decode, disusul
+**reel fling** ala huyml.co (berputar cepat ±1,8 dtk → mengendap di proyek 1). Dibangun sebagai static SPA yang jalan identik di GitHub Pages
 maupun Vercel dari codebase yang sama.
 
 > Status: iseng-iseng, just for fun. Bukan situs open-for-work.
@@ -50,7 +51,9 @@ real craft
 zero invoices
 ```
 
-±1,9 dtk, lalu tirai naik 0,75 dtk membuka hero. Reduced-motion: statis + cepat.
+±1,9 dtk, lalu tirai naik 0,75 dtk membuka hero — disusul **reel fling**:
+kartu + list judul + angka berputar cepat 2 putaran (power4.out, 1,8 dtk)
+lalu mengendap di proyek 1. Reduced-motion: statis + cepat, tanpa fling.
 
 ### `/` — Home (SATU KANVAS)
 
@@ -71,7 +74,7 @@ header ala HUYMI**:
   ikut **looping mulus** dan tidak pernah bolong di ujung; klik item =
   lompat lewat putaran terdekat
 - **meta** kiri tengah (role / launching / category, kolom label:value)
-- **angka raksasa** kiri bawah: `nr.` + `001` (Heros bold) + `/ 011`
+- **angka raksasa** kiri bawah: `nr.` + `1`…`11` (Heros bold, tanpa zero-pad) + `/ 11`
 - kiri atas: teks vertikal `portfolio '26` + `11 works — jakarta, id`
 - kanan atas: `[ just for fun ] / working from jakarta`
 - kiri bawah: `scroll ↓`; kanan bawah: dua kotak ■ □
@@ -85,7 +88,8 @@ header ala HUYMI**:
   (Tombol panah lingkaran lama sudah dihapus — navigasi = scroll/list/keyboard.)
 - **panah lingkaran** = proyek berikutnya; klik list = lompat proyek;
   keyboard ↑↓←→ saat pinned
-- di bawah foto: `case study →` (buka case) + `live website ↗`
+- mobile: kartu reel diperkecil (28svh) & container di-right-pad 38vw, list
+  judul **tetap tampil** di kanan (ITEM 60px, tanpa blurb; angka & wrap utuh)
 - **scroll vertikal = gonta-ganti proyek**: section di-pin (ScrollTrigger,
   `scrub 0.6`, proxy object), **snap manual** saat scroll idle ±160ms.
   Reduced motion: 11 layar statis berurutan, tanpa pin.
@@ -167,6 +171,14 @@ fallback `prefers-reduced-motion` di setiap bagian.
   langkah di setup ini.)
 - Klik list / keyboard = `scrollTo` ke **putaran terdekat** (`min |k−f|`
   untuk `k ≡ i (mod N)`) — tidak pernah rewind jauh.
+- **Intro fling** (post-curtain): tween GSAP `f: 2N → 0` (`power4.out`,
+  1,8 dtk, delay 0,1) menggerakkan `apply(f)` yang sama — scrub ScrollTrigger
+  di-guard (`flingingRef`) selama fling; begitu selesai, posisi scroll (=0)
+  identik dengan hasil fling → transisi tanpa lompatan.
+- **Tinggi item list responsif**: `itemH()` = 60px (<768px) / 84px (md) —
+  HARUS sinkron dengan class `h-[60px] md:h-[84px]` di markup.
+- Baris `case study → / live website ↗` di bawah foto **dihapus** (v2.9);
+  akses case study via URL `/works/:slug`.
 - Setup/cleanup di **`useLayoutEffect`** (ScrollTrigger pin mem-wrap section
   dengan `pin-spacer`; kill lewat effect pasif → React gagal `removeChild`).
 - Reduced motion: 11 layar statis berurutan (tanpa pin/tween).

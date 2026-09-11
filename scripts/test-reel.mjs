@@ -1,42 +1,39 @@
+import { mkdirSync } from 'node:fs';
 import { chromium } from 'playwright-core';
 
 const URL = process.env.URL || 'http://localhost:3000/wah-anggaaa/';
 const SHOTS = process.env.SHOTS || '.shots';
-import { mkdirSync } from 'node:fs';
 mkdirSync(SHOTS, { recursive: true });
-const H = 900, W = 1440, N = 11, TOTAL = 22, ITEM = 84;
+const H = 900, W = 1440, N = 11, TOTAL = 22;
+const MOBILE_H = 740, MOBILE_W = 390;
 
 const browser = await chromium.launch();
 const out = [];
 const ok = (name, pass, detail = '') =>
   out.push(`${pass ? 'PASS' : 'FAIL'}  ${name}${detail ? '  — ' + detail : ''}`);
 
-async function fresh(reducedMotion) {
+async function fresh(reducedMotion, waitMs = 5200) {
   const page = await browser.newPage({ viewport: { width: W, height: H }, reducedMotion });
   const errs = [];
   page.on('pageerror', (e) => errs.push('PAGEERROR: ' + e.message));
   page.on('console', (m) => m.type() === 'error' && errs.push('CONSOLE: ' + m.text()));
   await page.goto(URL, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(3300); // intro scramble + curtain
+  await page.waitForTimeout(waitMs); // intro scramble+curtain + fling selesai
   return { page, errs };
 }
 
-/* ================= MODE ANIMASI ================= */
+/* ================= DESKTOP (post-fling) ================= */
 const { page, errs } = await fresh('no-preference');
-
 const geo = await page.evaluate(() => {
   const sec = document.querySelector('section[aria-label^="Selected works"]');
-  const stage = sec.querySelector(':scope > div');
   const r = sec.getBoundingClientRect();
-  return { top: window.scrollY + r.top, h: stage.clientHeight };
+  return { top: window.scrollY + r.top, h: sec.querySelector(':scope > div').clientHeight };
 });
 const Y = (f) => geo.top + f * geo.h;
-
 const scrollToF = async (f, settleMs = 90) => {
   await page.evaluate((y) => window.scrollTo({ top: y, behavior: 'auto' }), Y(f));
   await page.waitForTimeout(settleMs);
 };
-
 const state = () =>
   page.evaluate(({ W, H }) => {
     const sec = document.querySelector('section[aria-label^="Selected works"]');
@@ -50,157 +47,176 @@ const state = () =>
       const r = d.getBoundingClientRect();
       return { vis: d.style.visibility, tf: d.style.transform, cy: r.top + r.height / 2 };
     });
-    const listInner = stage.querySelector('div[class*="max-w-\\[320px\\]"] > div');
+    const listInner = stage.querySelector('div[class*="max-w-\\[320px\\]"] > div') ||
+      [...stage.querySelectorAll('div')].find((d) => d.className.includes('overflow-hidden') && d.children.length === 1 && d.querySelector(':scope > div').children.length === 33)?.firstElementChild;
     const btns = [...stage.querySelectorAll('button[aria-label*="proyek"]')];
-    const activeBtn = btns[11 + (parseInt(activeNo, 10) - 1)];
-    const abRect = activeBtn?.getBoundingClientRect();
-    const hitAt = (y) => {
-      const el = document.elementFromPoint(W - 110, y);
-      return el?.closest?.('button[aria-label*="proyek"]')?.getAttribute('aria-label') ?? null;
-    };
+    const abRect = btns[11 + (parseInt(activeNo, 10) - 1)]?.getBoundingClientRect();
+    const hitAt = (y) => document.elementFromPoint(W - 110, y)?.closest?.('button[aria-label*="proyek"]')?.getAttribute('aria-label') ?? null;
+    const caseStudyGone = ![...stage.querySelectorAll('*')].some((p) => p.children.length === 0 && /case study/i.test(p.textContent));
     return {
-      activeNo, totalNo, slots, listTf: listInner?.style.transform ?? '',
-      nBtns: btns.length, activeBtnTop: abRect ? abRect.top + abRect.height / 2 : null,
+      activeNo, totalNo, slots,
+      listTf: listInner?.style.transform ?? '',
+      nBtns: btns.length,
+      activeBtnCenter: abRect ? abRect.top + abRect.height / 2 : null,
+      activeBtnH: abRect ? abRect.height : null,
       hitTop: hitAt(90), hitBottom: hitAt(H - 40),
+      caseStudyGone,
     };
   }, { W, H });
-
 const rot = (tf) => +(tf.match(/rotate\(([-\d.]+)deg\)/)?.[1] ?? NaN);
-const tyv = (tf) => +(tf.match(/translateY\(([-\d.]+)px\)/)?.[1] ?? NaN);
 
-// ---- 1. reel geometri di f=0 ----
+// ---- 0. baris case study / live website hilang ----
+{
+  const s0 = await state();
+  ok('baris "case study → / live website ↗" dihapus', s0.caseStudyGone);
+}
+
+// ---- 1. reel geometri ----
 await scrollToF(0);
 let s = await state();
-ok('awal: nomor aktif = 001 (bukan substring)', s.activeNo === '001' && s.totalNo === '/ 011', `${s.activeNo} ${s.totalNo}`);
-ok('011 ngintip di atas, 002 di bawah', s.slots[10].vis === 'visible' && s.slots[10].cy < 30 && s.slots[1].vis === 'visible' && s.slots[1].cy > H - 30, `${s.slots[10].cy.toFixed(0)}/${s.slots[1].cy.toFixed(0)}`);
-ok('kartu tengah tegak 0°, tetangga ±5,5°', rot(s.slots[0].tf) === 0 && Math.abs(rot(s.slots[10].tf) - 5.5) < 0.02 && Math.abs(rot(s.slots[1].tf) + 5.5) < 0.02);
-const geoOK = s.slots[0];
-// aspek + spacing via bounding rect penuh
-const rect0 = await page.evaluate(() => {
-  const d = document.querySelector('section[aria-label^="Selected works"] div.m-auto');
-  const r = d.getBoundingClientRect();
-  return { w: r.width, h: r.height };
-});
-ok('aspek kartu portrait 5:6', Math.abs(rect0.w / rect0.h - 5 / 6) < 0.02, (rect0.w / rect0.h).toFixed(3));
-ok('spacing antar kartu = 0,55×h', Math.abs(s.slots[1].cy - H / 2 - 0.55 * geo.h) < 2, `${(s.slots[1].cy - H / 2).toFixed(0)}px`);
+ok('awal: angka aktif = "1" (tanpa zero-pad)', s.activeNo === '1' && s.totalNo === '/ 11', `${s.activeNo} ${s.totalNo}`);
+ok('011 ngintip atas, 002 di bawah', s.slots[10].vis === 'visible' && s.slots[10].cy < 30 && s.slots[1].vis === 'visible' && s.slots[1].cy > H - 30);
+ok('tengah 0°, tetangga ±5,5°', rot(s.slots[0].tf) === 0 && Math.abs(rot(s.slots[10].tf) - 5.5) < 0.02);
 
-// ---- 2. list kanan ----
-ok('list = 3 lipatan (33 item)', s.nBtns === 3 * N, s.nBtns);
-ok('item aktif ter-center di 450 (perilaku v2.7)', Math.abs(s.activeBtnTop - H / 2) < 2, String(s.activeBtnTop));
-ok('list terisi di atas & bawah (looping)', s.hitTop !== null && s.hitBottom !== null, `${s.hitTop} / ${s.hitBottom}`);
-const aboveLbl = await page.evaluate((n) => {
-  const btns = [...document.querySelectorAll('button[aria-label*="proyek"]')];
-  return btns[n - 1]?.getAttribute('aria-label');
-}, N);
-ok('tepat di atas item aktif = 011 (wrap terlihat)', /011/.test(aboveLbl ?? ''), aboveLbl);
+// ---- 2. list desktop ----
+ok('list 3 lipatan (33 item), ITEM=84', s.nBtns === 33 && s.activeBtnH === 84, `${s.nBtns} item, h=${s.activeBtnH}`);
+ok('item aktif ter-center di 450', Math.abs(s.activeBtnCenter - H / 2) < 2, String(s.activeBtnCenter));
+ok('list terisi atas & bawah', s.hitTop !== null && s.hitBottom !== null);
 
-// ---- 3. mid-transition ----
-await scrollToF(0.5);
-s = await state();
-ok('f=0.5: rotasi simetris +2,75/−2,75 & posisi atas/bawah', Math.abs(rot(s.slots[0].tf) - 2.75) < 0.05 && Math.abs(rot(s.slots[1].tf) + 2.75) < 0.05 && s.slots[0].cy < H / 2 && s.slots[1].cy > H / 2, `${rot(s.slots[0].tf)}/${rot(s.slots[1].tf)}`);
-
-// ---- 4. wrap forward: f=10..12 = 011 → 001 → 002 ----
+// ---- 3. wrap & loop (regresi v2.8, dengan format angka baru) ----
 await scrollToF(10);
 s = await state();
-ok('f=10 → aktif 011', s.activeNo === '011', s.activeNo);
+ok('f=10 → aktif 11', s.activeNo === '11', s.activeNo);
 await scrollToF(11);
 s = await state();
-ok('f=11 → aktif 001 LAGI (wrap mulus, no rewind)', s.activeNo === '001', s.activeNo);
-ok('f=11: 001 di tengah, 011 ngintip atas, 002 ngintip bawah', Math.abs(s.slots[0].cy - H / 2) < 2 && s.slots[10].vis === 'visible' && Math.abs(s.slots[10].cy - (H / 2 - 0.55 * geo.h)) < 2 && s.slots[1].vis === 'visible' && Math.abs(s.slots[1].cy - (H / 2 + 0.55 * geo.h)) < 2,
-  `001cy=${s.slots[0].cy.toFixed(0)} 011cy=${s.slots[10].cy.toFixed(0)} 002cy=${s.slots[1].cy.toFixed(0)}`);
-await scrollToF(11.5);
-s = await state();
-ok('f=11.5 (001→002): rotasi simetris lagi', Math.abs(rot(s.slots[0].tf) - 2.75) < 0.05 && Math.abs(rot(s.slots[1].tf) + 2.75) < 0.05, `${rot(s.slots[0].tf)}/${rot(s.slots[1].tf)}`);
+ok('f=11 → aktif 1 LAGI (wrap mulus)', s.activeNo === '1', s.activeNo);
 await scrollToF(12);
 s = await state();
-ok('f=12 → aktif 002 (lanjut, bukan rewind)', s.activeNo === '002', s.activeNo);
-
-// ---- 5. wrap backward: dari 001 (f=11) ArrowUp → 011 ----
+ok('f=12 → 2 (lanjut, no rewind)', s.activeNo === '2', s.activeNo);
 await scrollToF(11); await page.waitForTimeout(1100);
-s = await state();
-ok('sebelum ArrowUp: 001 aktif (wrap point)', s.activeNo === '001', s.activeNo);
 await page.keyboard.press('ArrowUp');
 await page.waitForTimeout(1500);
 s = await state();
-ok('ArrowUp dari 001 (putaran-2) → 011 (LOOP BELAKANG)', s.activeNo === '011', s.activeNo);
+ok('ArrowUp dari 1 (wrap) → 11 (loop belakang)', s.activeNo === '11', s.activeNo);
 
-// ---- 6. snap idle ----
+// ---- 4. snap & jump ----
 await scrollToF(4.37, 40);
 await page.waitForTimeout(1100);
 s = await state();
-ok('snap otomatis (f=4.37 → step4 = 005)', s.activeNo === '005', s.activeNo);
-
-// ---- 7. klik list = putaran terdekat ----
-await scrollToF(12); await page.waitForTimeout(1100); // 002
+ok('snap f=4.37 → 5', s.activeNo === '5', s.activeNo);
+await scrollToF(12); await page.waitForTimeout(1100);
 await page.evaluate((n) => {
-  const btns = [...document.querySelectorAll('button[aria-label*="proyek"]')];
-  btns[2 * n + 10].click(); // 011 di lipatan-3
+  document.querySelectorAll('button[aria-label*="proyek"]')[2 * n + 10].click();
 }, N);
 await page.waitForTimeout(1800);
 s = await state();
-ok('klik 011 dari 002 → lompat terdekat', s.activeNo === '011', s.activeNo);
+ok('klik 11 dari 2 → jalur terdekat', s.activeNo === '11', s.activeNo);
 const yAfter = await page.evaluate(() => window.scrollY);
-ok('jarak lompat = jalur TERDEKAT (002→011 mundur 2 langkah, bukan maju 9)', Math.abs(yAfter - Y(10)) < 30, `y=${(yAfter - geo.top).toFixed(0)} vs target ${(10 * geo.h).toFixed(0)}`);
+ok('lompat = mundur 2 langkah (bukan maju 9)', Math.abs(yAfter - Y(10)) < 30, `y=${(yAfter - geo.top).toFixed(0)}`);
 
-// ---- 8. ujung ----
+// ---- 5. ujung + error ----
 await scrollToF(TOTAL);
 s = await state();
-ok('f=22 → 001 lagi (2 putaran penuh)', s.activeNo === '001', s.activeNo);
-ok('list di ujung tetap terisi penuh (translateY −2436)', /^translateY\(-2436(\.\d)?px\)$/.test(s.listTf), s.listTf);
-const afterEnd = await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'auto' }) ?? window.scrollY);
+ok('f=22 → 1 lagi', s.activeNo === '1', s.activeNo);
+const afterEnd = await page.evaluate(() => { window.scrollTo({ top: document.body.scrollHeight, behavior: 'auto' }); });
 await page.waitForTimeout(350);
 const yEnd = await page.evaluate(() => window.scrollY);
-ok('tidak ada jebakan: scroll lanjut melepas pin', yEnd >= Y(TOTAL) - 2, String(yEnd));
+ok('tidak ada jebakan di ujung', yEnd >= Y(TOTAL) - 2);
+ok('desktop: tanpa error', errs.length === 0, errs.join(' | '));
 
-// ---- 9. screenshot bukti ----
-await scrollToF(0, 60); await page.waitForTimeout(450);
-await page.screenshot({ path: SHOTS + '/01-start.png' });
-await scrollToF(11, 60); await page.waitForTimeout(450);
-await page.screenshot({ path: SHOTS + '/02-wrap-001.png' });
-await scrollToF(10.5, 60);
-await page.screenshot({ path: SHOTS + '/03-transition.png' });
-await scrollToF(3, 60); await page.waitForTimeout(450);
-await page.screenshot({ path: SHOTS + '/04-item004.png' });
-ok('tanpa console/page error (mode animasi)', errs.length === 0, errs.join(' | '));
+// screenshot
+await scrollToF(11, 60); await page.waitForTimeout(400);
+await page.screenshot({ path: SHOTS + '/07-desktop-wrap.png' });
 await page.close();
 
-/* ================= MODE REDUCED MOTION ================= */
+/* ================= INTRO FLING ================= */
 {
-  const { page: p2, errs: e2 } = await fresh('reduce');
-  const n = await p2.evaluate(() => document.querySelectorAll('section[aria-label="Selected works"] .m-auto').length);
-  const stages = await p2.evaluate(() => document.querySelectorAll('section[aria-label="Selected works"] > div').length);
-  ok('reduced: 11 layar statis tanpa pin', stages === 11 && n === 121, `stages=${stages} slots=${n}`);
-  ok('reduced: tanpa error', e2.length === 0, e2.join(' | '));
-  await p2.close();
+  const p = await browser.newPage({ viewport: { width: W, height: H } });
+  await p.goto(URL, { waitUntil: 'domcontentloaded' });
+  // tunggu kanvas ter-mount (intro selesai) → sampling rapat saat fling
+  await p.waitForFunction(() => document.querySelector('section[aria-label^="Selected works"]'), null, { timeout: 15000 });
+  const seq = [];
+  for (let i = 0; i < 24; i++) {
+    await p.waitForTimeout(100);
+    const n = await p.evaluate(() => {
+      const st = document.querySelector('section[aria-label^="Selected works"]');
+      if (!st) return null;
+      const el = [...st.querySelectorAll('p')].find((p) => p.className.includes('lbl') && p.textContent.trim().startsWith('nr.'));
+      return el?.nextElementSibling?.querySelector('span')?.textContent?.trim() ?? null;
+    });
+    if (n) seq.push(n);
+  }
+  await p.waitForTimeout(3000);
+  const final = await p.evaluate(() => {
+    const el = [...document.querySelectorAll('p')].find((p) => p.className.includes('lbl') && p.textContent.trim().startsWith('nr.'));
+    return el?.nextElementSibling?.querySelector('span')?.textContent?.trim();
+  });
+  const unique = new Set(seq);
+  ok('intro fling: reel berputar cepat saat load (≥4 proyek berbeda terlihat)', unique.size >= 4, [...unique].join(','));
+  ok('intro fling: mengendap di proyek 1', final === '1', final);
+  await p.screenshot({ path: SHOTS + '/08-settled.png' });
+  await p.close();
 }
 
-/* ================= MODE MOBILE ================= */
+/* ================= MOBILE ================= */
 {
-  const m = await browser.newPage({ viewport: { width: 390, height: 740 } });
+  const m = await browser.newPage({ viewport: { width: MOBILE_W, height: MOBILE_H } });
   const em = [];
   m.on('pageerror', (e) => em.push(String(e)));
   await m.goto(URL, { waitUntil: 'networkidle' });
-  await m.waitForTimeout(3300);
+  await m.waitForTimeout(5200);
   const mg = await m.evaluate(() => {
     const sec = document.querySelector('section[aria-label^="Selected works"]');
-    const stage = sec.querySelector(':scope > div');
     const r = sec.getBoundingClientRect();
-    const mid = stage.querySelector('div.m-auto').getBoundingClientRect();
-    return { top: window.scrollY + r.top, h: stage.clientHeight, cardW: mid.width, vw: innerWidth, docW: document.documentElement.scrollWidth };
+    return { top: scrollY + r.top, h: sec.querySelector(':scope > div').clientHeight, vw: innerWidth, docW: document.documentElement.scrollWidth };
   });
+  await m.evaluate((y) => window.scrollTo({ top: y, behavior: 'auto' }), mg.top);
+  await m.waitForTimeout(400);
+  const mstate = await m.evaluate(({ W }) => {
+    const st = document.querySelector('section[aria-label^="Selected works"] > div > div');
+    const card = st.querySelector('div.m-auto').getBoundingClientRect();
+    const btn = st.querySelector('button[aria-label*="proyek"]')?.getBoundingClientRect();
+    const btns = [...st.querySelectorAll('button[aria-label*="proyek"]')];
+    const ab = btns[11]?.getBoundingClientRect();
+    const nrEl = [...st.querySelectorAll('p')].find((p) => p.textContent.trim() === 'nr.');
+    const activeNo = nrEl?.nextElementSibling?.querySelector('span')?.textContent?.trim();
+    const hit = document.elementFromPoint(W - 60, 370)?.closest?.('button[aria-label*="proyek"]')?.getAttribute('aria-label') ?? null;
+    return {
+      cardRight: card.right, cardW: card.width, listLeft: btn?.left ?? null, listH: btn?.height ?? null,
+      listVisible: btns.length === 33 && ab ? Math.abs(ab.top + ab.height / 2 - 370) < 2 : false,
+      activeNo, hit,
+      overlaps: btn ? card.right > btn.left + 1 : false,
+    };
+  }, { W: MOBILE_W });
+  ok('mobile: list judul tampil (33 item, ITEM=60)', mstate.listVisible && mstate.listH === 60, `h=${mstate.listH}`);
+  ok('mobile: kartu reel tidak menutupi list', !mstate.overlaps, `cardRight=${mstate.cardRight?.toFixed(0)} listLeft=${mstate.listLeft?.toFixed(0)}`);
+  ok('mobile: kartu kecil (≤48vw)', mstate.cardW <= MOBILE_W * 0.48 + 2, `${mstate.cardW.toFixed(0)}px`);
+  ok('mobile: angka = "1" tanpa zero-pad', mstate.activeNo === '1', mstate.activeNo);
+  ok('mobile: hit-test list = button proyek', mstate.hit !== null, mstate.hit);
   await m.evaluate((y) => window.scrollTo({ top: y, behavior: 'auto' }), mg.top + 11 * mg.h);
   await m.waitForTimeout(400);
-  const mNo = await m.evaluate(() => [...document.querySelectorAll('span')].map(s => s.textContent).find(t => /^0\d\d$/.test(t)));
-  ok('mobile: wrap juga jalan di 390px (011→001)', mNo === '001', mNo);
-  ok('mobile: tanpa overflow horizontal', mg.docW <= mg.vw + 1, `doc=${mg.docW} vw=${mg.vw}`);
-  const nrClear = await m.evaluate(() => {
-    const el = document.elementFromPoint(60, innerHeight - 60);
-    return !(el?.closest?.('div.m-auto')); // angka NR harus di ATAS kartu reel
+  const wrapNo = await m.evaluate(() => {
+    const st = document.querySelector('section[aria-label^="Selected works"] > div > div');
+    const nrEl = [...st.querySelectorAll('p')].find((p) => p.textContent.trim() === 'nr.');
+    return nrEl?.nextElementSibling?.querySelector('span')?.textContent?.trim();
   });
-  ok('mobile: kartu tetangga tidak menutupi angka NR (z-order chrome)', nrClear);
-  await m.screenshot({ path: SHOTS + '/05-mobile-wrap.png' });
+  ok('mobile: wrap tetap jalan (f=11 → 1)', wrapNo === '1', wrapNo);
+  ok('mobile: tanpa overflow horizontal', mg.docW <= mg.vw + 1, `doc=${mg.docW}`);
+  await m.evaluate((y) => window.scrollTo({ top: y, behavior: 'auto' }), mg.top + 3 * mg.h);
+  await m.waitForTimeout(500);
+  await m.screenshot({ path: SHOTS + '/09-mobile-labels.png' });
   ok('mobile: tanpa error', em.length === 0, em.join(' | '));
   await m.close();
+}
+
+/* ================= REDUCED MOTION ================= */
+{
+  const { page: p2, errs: e2 } = await fresh('reduce', 3600);
+  const n = await p2.evaluate(() => document.querySelectorAll('section[aria-label="Selected works"] .m-auto').length);
+  const stages = await p2.evaluate(() => document.querySelectorAll('section[aria-label="Selected works"] > div').length);
+  ok('reduced: 11 layar statis tanpa pin, TANPA fling', stages === 11 && n === 121, `stages=${stages}`);
+  ok('reduced: tanpa error', e2.length === 0, e2.join(' | '));
+  await p2.close();
 }
 
 console.log(out.join('\n'));

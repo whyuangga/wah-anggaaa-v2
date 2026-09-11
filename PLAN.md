@@ -405,3 +405,34 @@ wrap f=11 identik pixel dengan f=0; f=12 lanjut 002 (no rewind);
 ArrowUp dari 001 → 011; snap f=4.37→005; klik list = jalur terdekat;
 list terisi penuh di kedua ujung; tidak ada error konsol; reduced =
 11 layar statis (121 slot) tanpa pin; mobile tanpa overflow-x.
+
+
+## 17. v2.9 — Flings intro, mobile label, bersihin chrome (2026-09-12)
+
+**Permintaan user (3):**
+1. Hapus baris `case study →` + `live website ↗` di bawah foto.
+2. Kartu dikecilkan di mobile supaya list label judul bisa tampil di sana.
+3. Intro fling ala huyml.co: reel berputar cepat → diam di proyek 01; dan
+   angka proyek `1`–`11` tanpa zero-pad (bukan `001`).
+
+### Implementasi
+- Fling: `gsap.to({f: TOTAL→0}, power4.out 1,8s, delay 0,1)` dipicu pada
+  useLayoutEffect ST yang sama; scrub di-guard via `flingingRef`; `kill()`
+  di cleanup; reduced-motion tidak mount jalur ini (statis, tanpa fling).
+- Mobile: container reel `right-[38vw]` (desktop `right-0`) + kartu
+  `h-[28svh] max-w-full` — kartu centering via `m-auto` di dalam container
+  yang menyempit. ⚠️ Percobaan `mr-[46vw] md:mr-0` pada slot TERNYATA
+  merusak centering desktop: `inset-0 + m-auto` dengan `margin-right:0`
+  membuat `margin-left:auto` menyerap seluruh sisa ruang (kartu nempel
+  tepi kanan) — ketemu lewat e2e, diuji ulang dengan rect slot (x=570 ✓).
+- List: selalu tampil (buang `hidden sm:block`), ITEM 60px di mobile via
+  `itemH()`, blurb `hidden md:block`, judul `clamp(1rem,4.2vw,1.3rem)`,
+  kategori pakai utilitas font-size (bukan `.lbl` — class non-layer
+  mengalahkan utilitas Tailwind v4 di cascade).
+- Angka: `String(Number(wk.index))` + `/ {N}`; `.lbl` dkk tak berubah.
+
+### Verifikasi
+`tsc` bersih, build ok, e2e (scripts/test-reel.mjs) 29/29 PASS:
+fling terbukti (seq angka unik ≥4 saat load → endap di "1"), desktop
+center 720✓, mobile list 33 item h=60✓ tanpa overlap (cardRight 211 <
+listLeft 226), wrap & snap & jump tetap, reduced statis, tanpa error.

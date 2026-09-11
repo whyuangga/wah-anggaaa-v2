@@ -12,7 +12,9 @@ import { useGo } from '../lib/transition';
 gsap.registerPlugin(ScrollTrigger);
 
 const N = WORKS.length;
-const ITEM = 84; // tinggi item list (px) — harus sama dengan h-[84px] di markup
+/** tinggi item list (px) — HARUS sama dengan class `h-[60px] md:h-[84px]` di markup */
+const itemH = () =>
+  typeof window !== 'undefined' && window.innerWidth < 768 ? 60 : 84;
 
 /* ---------- geometri reel (diukur dari screenshot HUYMI) ---------- */
 const LOOPS = 2; // gulungan penuh 0→…→N per putaran (bolak-balik tanpa ujung)
@@ -25,7 +27,7 @@ const PEEK = 1.6; // kartu tampil selama |jarak| ≤ PEEK
 const mod = (x: number, m: number) => ((x % m) + m) % m;
 const wrap = (x: number) => mod(x, N);
 
-/** jaraksigned terdekat kartu j dari posisi virtual f (memutar/looping) */
+/** jarak-signed terdekat kartu j dari posisi virtual f (memutar/looping) */
 const dist = (j: number, f: number) => wrap(j - f + N / 2) - N / 2;
 
 /** transform + visibilitas satu kartu reel di posisi f — deterministik per (j, h) */
@@ -50,7 +52,10 @@ function slotAt(j: number, f: number, h: number) {
  * …010 → 011 → 001 → 002 mulus dua arah, list kanan pun tidak pernah
  * bolong di ujung (dirender 3 lipatan). Snap manual ke tiap proyek;
  * keyboard ↑↓←→ saat pinned; klik list = lompat jalur terdekat.
- * Reduced motion: 11 layar statis berurutan (tanpa pin, tanpa loop).
+ * INTRO FLING (ala huyml.co): saat mount, reel berputar cepat 2 putaran
+ * lalu mengendap di proyek 1 (scrub scroll di-guard selama fling).
+ * Mobile: kartu reel diperkecil & digeser kiri, list judul TETAP tampil.
+ * Reduced motion: 11 layar statis berurutan (tanpa pin, tanpa loop, tanpa fling).
  */
 export default function WorksHuy() {
   const go = useGo();
@@ -61,6 +66,7 @@ export default function WorksHuy() {
   const stRef = useRef<ScrollTrigger | null>(null);
   const fRef = useRef(0); // indeks virtual saat ini (0..TOTAL)
   const idxRef = useRef(0);
+  const flingingRef = useRef(false); // intro fling aktif → scrub scroll dibiarkan
   const [idx, setIdx] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const hRef = useRef(900);
@@ -114,7 +120,7 @@ export default function WorksHuy() {
         listRef.current.style.transform = `translateY(${(
           h / 2 -
           clipTopRef.current -
-          (f + N + 0.5) * ITEM
+          (f + N + 0.5) * itemH()
         ).toFixed(1)}px)`;
       }
       const i = wrap(Math.round(f));
@@ -139,6 +145,7 @@ export default function WorksHuy() {
         // NB: ScrollTrigger `snap` bawaan tidak stabil di setup ini (meleset
         // beberapa langkah) → snap manual via listener scroll-idle di bawah.
         onUpdate: (self) => {
+          if (flingingRef.current) return; // fling intro pegang kendali
           fRef.current = self.progress * TOTAL;
           apply(fRef.current);
         },
@@ -146,6 +153,24 @@ export default function WorksHuy() {
     });
     stRef.current = tween.scrollTrigger as ScrollTrigger;
     apply(0);
+
+    // INTRO FLING ala HUYMI: begitu konten muncul, reel berputar cepat
+    // (2 putaran penuh menyapu semua proyek) lalu mengendap di proyek 001.
+    // List & angka ikut berputar karena satu sumbu `apply(f)`.
+    const flingObj = { f: TOTAL };
+    flingingRef.current = true;
+    fRef.current = TOTAL;
+    const fling = gsap.to(flingObj, {
+      f: 0,
+      duration: 1.8,
+      delay: 0.1,
+      ease: 'power4.out',
+      onUpdate: () => apply(flingObj.f),
+      onComplete: () => {
+        flingingRef.current = false;
+        apply(0); // scroll masih di awal range → identik, tanpa lompatan
+      },
+    });
 
     const onKey = (e: KeyboardEvent) => {
       const st = stRef.current;
@@ -195,6 +220,8 @@ export default function WorksHuy() {
       window.removeEventListener('scroll', onScroll);
       tween.scrollTrigger?.kill();
       tween.kill();
+      fling.kill();
+      flingingRef.current = false;
       stRef.current = null;
     };
   }, [reduced]);
@@ -211,7 +238,7 @@ export default function WorksHuy() {
     const listStaticY = (
       hRef.current / 2 -
       (typeof window !== 'undefined' && window.innerWidth >= 768 ? 72 : 0) -
-      (i + N + 0.5) * ITEM
+      (i + N + 0.5) * itemH()
     ).toFixed(0);
     return (
       <div className="relative h-svh overflow-hidden">
@@ -283,8 +310,9 @@ export default function WorksHuy() {
 
         {/* foto: REEL VERTIKAL LOOPING ala HUYMI — kartu portrait 5:6, aktif
             di tengah tegak 0°, tetangga ngintip miring ±5,5° (melurus saat
-            masuk tengah), jarak antar kartu 0,55×tinggi stage; 011 → 001 mulus */}
-        <div className="pointer-events-none absolute inset-0">
+            masuk tengah), jarak antar kartu 0,55×tinggi stage; 011 → 001 mulus.
+            Mobile: kartu kecil & geser kiri (mr-[38vw]) agar list judul muat */}
+        <div className="pointer-events-none absolute inset-y-0 left-0 right-[38vw] md:right-0">
           {WORKS.map((im, j) => {
             const t = slotAt(j, f0, hNow);
             return (
@@ -297,7 +325,7 @@ export default function WorksHuy() {
                       }
                     : undefined
                 }
-                className="absolute inset-0 m-auto h-[40svh] max-h-[440px] aspect-[5/6] max-w-[80vw]"
+                className="absolute inset-0 m-auto h-[28svh] max-w-full aspect-[5/6] md:h-[40svh] md:max-h-[440px] md:max-w-[80vw]"
                 style={t}
               >
                 <span
@@ -317,28 +345,11 @@ export default function WorksHuy() {
           })}
         </div>
 
-        {/* link di bawah foto aktif */}
-        <div className="absolute top-[calc(50%+21svh)] left-1/2 z-10 flex -translate-x-1/2 items-center gap-5">
-          <button
-            onClick={() => go(`/works/${wk.slug}`)}
-            className="lbl cursor-pointer whitespace-nowrap text-ink transition-opacity hover:opacity-60"
-          >
-            case study →
-          </button>
-          <a
-            href={wk.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="lbl whitespace-nowrap text-ink/50 transition-opacity hover:text-ink hover:opacity-100"
-          >
-            live website ↗
-          </a>
-        </div>
-
         {/* list proyek di kanan (reel LOOPING) — 3 lipatan WORKS agar item
-            tidak pernah bolong saat wrap; atasnya di-clip di bawah chrome.
-            Klik = lompat ke putaran terdekat. */}
-        <div className="absolute right-4 bottom-0 z-10 hidden top-0 w-[46vw] max-w-[320px] overflow-hidden sm:block md:top-[4.5rem] md:right-10">
+            tidak pernah bolong saat wrap; atasnya di-clip di bawah chrome
+            agar item yang bergulir tidak menabrak teks kanan-atas.
+            Mobile: tampil penuh (kartu sudah digeser ke kiri). */}
+        <div className="absolute top-0 right-2 bottom-0 z-10 w-[40vw] overflow-hidden md:top-[4.5rem] md:right-10 md:w-[46vw] md:max-w-[320px]">
           <div
             ref={animated ? listRef : undefined}
             className="absolute inset-x-0 top-0"
@@ -354,19 +365,25 @@ export default function WorksHuy() {
                   <button
                     key={`${copy}-${im.index}`}
                     onClick={() => jump(jj)}
-                    className={`block h-[84px] w-full cursor-pointer overflow-hidden text-left opacity-100`}
+                    className="block h-[60px] w-full cursor-pointer overflow-hidden text-left md:h-[84px]"
                     aria-label={`${im.title} — proyek ${im.index}`}
                   >
-                    <p className={`lbl ${active ? 'text-ink' : 'text-ink/35'}`}>{im.category}</p>
                     <p
-                      className={`mt-0.5 font-serif text-[clamp(1.15rem,2.1vw,1.55rem)] leading-tight ${
+                      className={`font-display text-[9px] font-normal uppercase leading-[1.6] tracking-[0.16em] md:text-[11px] ${
+                        active ? 'text-ink' : 'text-ink/35'
+                      }`}
+                    >
+                      {im.category}
+                    </p>
+                    <p
+                      className={`mt-0.5 font-serif text-[clamp(1rem,4.2vw,1.3rem)] leading-tight md:text-[clamp(1.15rem,2.1vw,1.55rem)] ${
                         active ? 'text-ink' : 'text-ink/40'
                       }`}
                     >
                       {im.title}
                     </p>
                     <p
-                      className={`mt-1 text-[10px] leading-[1.3] ${
+                      className={`mt-1 hidden text-[10px] leading-[1.3] md:block ${
                         active ? 'text-ink/70' : 'text-ink/30'
                       }`}
                     >
@@ -400,9 +417,9 @@ export default function WorksHuy() {
           <p className="lbl mb-1 text-ink/50">nr.</p>
           <p className="flex items-start leading-none">
             <span className="font-display text-[clamp(4.5rem,10vw,8.5rem)] font-bold tracking-[-0.02em]">
-              {wk.index}
+              {String(Number(wk.index))}
             </span>
-            <span className="mt-3 lbl text-ink/50">/ {String(N).padStart(3, '0')}</span>
+            <span className="mt-3 lbl text-ink/50">/ {N}</span>
           </p>
         </div>
 
