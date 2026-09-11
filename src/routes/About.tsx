@@ -12,7 +12,7 @@ gsap.registerPlugin(ScrollTrigger);
 const EASE = [0.22, 1, 0.36, 1] as const;
 
 function Meta({ children }: { children: ReactNode }) {
-  return <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink/60">{children}</p>;
+  return <p className="lbl text-ink/60">{children}</p>;
 }
 
 function Reveal({ children, delay = 0, className = '' }: { children: ReactNode; delay?: number; className?: string }) {
@@ -50,7 +50,7 @@ function Portrait() {
   }
   return (
     <div className="w-full aspect-[4/5] bg-ink/[0.045] flex items-center justify-center">
-      <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink/30">[ portrait — soon ]</p>
+      <p className="lbl text-ink/30">[ portrait — soon ]</p>
     </div>
   );
 }
@@ -145,7 +145,7 @@ export default function About() {
           {/* portrait — offset dari grid */}
           <Reveal delay={0.15} className="md:col-span-5 md:col-start-1 mt-0 md:mt-24">
             <Portrait />
-            <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-ink/35">
+            <p className="mt-3 lbl text-[10px] text-ink/35">
               [ fig. 01 — the one-man studio ]
             </p>
           </Reveal>
@@ -165,7 +165,7 @@ export default function About() {
               </p>
             </Reveal>
             <Reveal delay={0.2}>
-              <p className="font-mono text-[12px] uppercase tracking-[0.18em] text-ink/45">
+              <p className="lbl text-[12px] text-ink/45">
                 [ no client work here — just for fun ]
               </p>
             </Reveal>
@@ -177,7 +177,7 @@ export default function About() {
           {CAPABILITIES.map(([group, items], gi) => (
             <div key={group}>
               <Reveal delay={gi * 0.1}>
-                <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink/45">{group}</p>
+                <p className="lbl text-ink/45">{group}</p>
                 <ul className="mt-5 space-y-1.5">
                   {items.map((item) => (
                     <li key={item} className="font-display font-medium tracking-tight text-[19px] leading-snug text-ink">
@@ -205,8 +205,8 @@ export default function About() {
         {/* colophon */}
         <div className="mt-20 md:mt-28 max-w-2xl">
           <Reveal>
-            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink/45">colophon</p>
-            <ul className="mt-5 space-y-1.5 font-mono text-[13px] leading-relaxed text-ink">
+            <p className="lbl text-ink/45">colophon</p>
+            <ul className="mt-5 space-y-1.5 lbl text-[13px] leading-relaxed text-ink">
               <li>type — tex gyre heros condensed + junicode + ibm plex mono</li>
               <li>color — #eae8e1 + #0d0d0c</li>
               <li>built — react + gsap + vite</li>

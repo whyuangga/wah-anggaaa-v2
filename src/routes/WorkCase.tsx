@@ -11,7 +11,7 @@ import NotFound from './NotFound';
 const EASE = [0.22, 1, 0.36, 1] as const;
 
 function Meta({ children }: { children: ReactNode }) {
-  return <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink/60">{children}</p>;
+  return <p className="lbl text-ink/60">{children}</p>;
 }
 
 function Reveal({
@@ -56,7 +56,7 @@ function Figure({ src, blur, alt, n }: { src: string; blur: string; alt: string;
           className="relative w-full object-cover opacity-0 transition-opacity duration-700"
         />
       </figure>
-      <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.18em] text-ink/35">[ fig. {String(n).padStart(2, '0')} ]</p>
+      <p className="mt-3 lbl text-[10px] text-ink/35">[ fig. {String(n).padStart(2, '0')} ]</p>
     </Reveal>
   );
 }
@@ -82,20 +82,28 @@ export default function WorkCase() {
       <section className="px-5 md:px-10 pt-32 md:pt-44 pb-20 md:pb-28">
         <Meta>[ case — {w.index} / 011 ]</Meta>
 
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.6, ease: [...EASE] }}
-          className="mt-8 font-display font-bold uppercase tracking-[-0.015em] leading-[0.88] text-[clamp(2.8rem,10vw,9rem)]"
-        >
-          {w.title}
-        </motion.h1>
+        <div className="relative">
+          <span
+            aria-hidden
+            className="text-outline pointer-events-none select-none absolute -top-4 md:-top-12 right-0 font-display font-bold leading-none text-[clamp(5rem,17vw,13rem)] opacity-[0.14]"
+          >
+            {w.index}
+          </span>
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1.6, ease: [...EASE] }}
+            className="relative mt-8 font-display font-bold uppercase tracking-[-0.015em] leading-[0.88] text-[clamp(2.8rem,10vw,9rem)]"
+          >
+            {w.title}
+          </motion.h1>
+        </div>
 
         <motion.p
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.3, delay: 0.3, ease: [...EASE] }}
-          className="mt-6 font-mono text-[11px] uppercase tracking-[0.18em] text-ink/50"
+          className="mt-6 font-serif italic text-[clamp(1.1rem,2.4vw,1.7rem)] text-ink/70"
         >
           {w.category} — {w.year} — {w.role}
         </motion.p>
@@ -127,7 +135,7 @@ export default function WorkCase() {
           <div className="md:col-span-4">
             <Reveal>
               <Meta>[ ringkasan ]</Meta>
-              <dl className="mt-6 space-y-3 font-mono text-[11px] uppercase tracking-[0.14em]">
+              <dl className="mt-6 space-y-3 lbl">
                 <div className="flex justify-between gap-4">
                   <dt className="text-ink/40">klien</dt>
                   <dd>fiktif belaka</dd>
@@ -175,7 +183,7 @@ export default function WorkCase() {
             {w.story.map((p, i) => (
               <Fragment key={i}>
                 <div className="grid md:grid-cols-12 gap-6">
-                  <p className="md:col-span-3 md:col-start-1 font-mono text-[11px] uppercase tracking-[0.18em] text-ink/60">
+                  <p className="md:col-span-3 md:col-start-1 lbl text-ink/60">
                     [ langkah {String(i + 1).padStart(2, '0')} ]
                   </p>
                   <Reveal delay={0.05} className="md:col-span-6">
@@ -224,7 +232,7 @@ export default function WorkCase() {
               {w.stats.map(([label, value]) => (
                 <div key={label}>
                   <p className="font-display font-bold tracking-tight text-[clamp(1.6rem,4.5vw,3rem)]">{value}</p>
-                  <p className="mt-2 font-mono text-[10px] md:text-[11px] uppercase tracking-[0.14em] text-ink/45">
+                  <p className="mt-2 lbl text-[10px] md:text-[11px] text-ink/45">
                     {label}
                   </p>
                 </div>
@@ -251,13 +259,13 @@ export default function WorkCase() {
         {/* prev / next */}
         <div className="mt-20 md:mt-28 pt-4 grid grid-cols-2 gap-6">
           <TLink to={`/works/${prev.slug}`} className="group block">
-            <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink/45">[ ← prev ]</span>
+            <span className="lbl text-ink/45">[ ← prev ]</span>
             <span className="block mt-3 font-display font-bold uppercase tracking-tight leading-[0.95] text-[clamp(1.4rem,4vw,2.6rem)] text-ink/60 group-hover:text-ink transition-colors">
               {prev.title}
             </span>
           </TLink>
           <TLink to={`/works/${next.slug}`} className="group block text-right">
-            <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink/45">[ next → ]</span>
+            <span className="lbl text-ink/45">[ next → ]</span>
             <span className="block mt-3 font-display font-bold uppercase tracking-tight leading-[0.95] text-[clamp(1.4rem,4vw,2.6rem)] text-ink/60 group-hover:text-ink transition-colors">
               {next.title}
             </span>

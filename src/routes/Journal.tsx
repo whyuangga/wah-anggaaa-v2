@@ -15,7 +15,7 @@ export default function Journal() {
         description="Jurnal wahanggaaa — catatan proses, eksperimen gagal, dan opini sok tahu. Tanpa jadwal terbit."
       />
       <section className="px-5 md:px-10 pt-32 md:pt-44">
-        <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink/60">
+        <p className="lbl text-ink/60">
           [ jurnal — {String(POSTS.length).padStart(3, '0')} tulisan ]
         </p>
 
@@ -51,14 +51,14 @@ export default function Journal() {
                 to={`/journal/${p.slug}`}
                 className="group grid md:grid-cols-12 gap-2 md:gap-6 py-8"
               >
-                <span className="md:col-span-1 font-mono text-[11px] tracking-[0.18em] text-ink/40">
+                <span className="md:col-span-1 lbl text-ink/40">
                   {String(POSTS.length - i).padStart(3, '0')}
                 </span>
                 <span className="md:col-span-6 font-serif font-bold text-[clamp(1.4rem,3.4vw,2.4rem)] leading-tight group-hover:opacity-60 transition-opacity">
                   {p.title}
                 </span>
                 <span className="md:col-span-3 text-[14px] leading-relaxed text-ink/70">{p.desc}</span>
-                <span className="md:col-span-2 md:text-right font-mono text-[11px] uppercase tracking-[0.14em] text-ink/40">
+                <span className="md:col-span-2 md:text-right lbl text-ink/40">
                   {formatDate(p.date)}
                 </span>
               </TLink>

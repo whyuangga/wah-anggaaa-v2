@@ -36,7 +36,7 @@ export default function JournalPost() {
       <section className="px-5 md:px-10 pt-32 md:pt-44">
         <TLink
           to="/journal"
-          className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink/45 hover:text-ink transition-colors"
+          className="lbl text-ink/45 hover:text-ink transition-colors"
         >
           [ ← jurnal ]
         </TLink>
@@ -54,7 +54,7 @@ export default function JournalPost() {
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.3, delay: 0.3, ease: [...EASE] }}
-          className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-[11px] uppercase tracking-[0.18em] text-ink/50"
+          className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 lbl text-ink/50"
         >
           <span>{formatDate(p.date)}</span>
           {p.tags.map((t) => (
@@ -76,7 +76,7 @@ export default function JournalPost() {
             <div>
               {prev && (
                 <TLink to={`/journal/${prev.slug}`} className="group block">
-                  <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink/45">
+                  <span className="lbl text-ink/45">
                     [ ← sebelumnya ]
                   </span>
                   <span className="block mt-3 font-serif font-bold leading-tight text-[clamp(1.2rem,3vw,2rem)] text-ink/60 group-hover:text-ink transition-colors">
@@ -88,7 +88,7 @@ export default function JournalPost() {
             <div className="text-right">
               {next && (
                 <TLink to={`/journal/${next.slug}`} className="group block">
-                  <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink/45">
+                  <span className="lbl text-ink/45">
                     [ berikutnya → ]
                   </span>
                   <span className="block mt-3 font-serif font-bold leading-tight text-[clamp(1.2rem,3vw,2rem)] text-ink/60 group-hover:text-ink transition-colors">

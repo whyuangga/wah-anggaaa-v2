@@ -14,7 +14,7 @@ export default function NotFound() {
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.2, ease: [...EASE] }}
-          className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink/60"
+          className="lbl text-ink/60"
         >
           [ 404 ]
         </motion.p>

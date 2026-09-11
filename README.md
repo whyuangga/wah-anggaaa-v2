@@ -1,12 +1,14 @@
 # WAH:ANGGAAA — Portfolio
 
 Portfolio satu halaman (+ About, Contact, 11 case study, Jurnal) bertema **terang,
-tipografis, dan editorial** — referensi kaviengcreative.com. Isinya 11 karya fiktif:
-"taman bermain satu orang": brand khayalan yang digarap serius. Identitas visual:
-paper `#EAE8E1` + ink `#0D0D0C`, display condensed raksasa + serif aksen, **tanpa
-garis di mana pun**, gambar berwarna penuh, dan signature motion **drag-rail
-horizontal**. Intro: text scramble ala terminal. Dibangun sebagai static SPA yang
-jalan identik di GitHub Pages maupun Vercel dari codebase yang sama.
+tipografis, dan editorial**. Isinya 11 karya fiktif: "taman bermain satu orang":
+brand khayalan yang digarap serius. Identitas visual v2.2: paper `#EAE8E1` +
+ink `#0D0D0C`, **2 font saja** — display condensed raksasa (Heros Cn) + serif aksen
+(Junicode Cn) — **tanpa garis di mana pun**, gambar berwarna penuh, hero poster 3
+treatment, dan signature **THE INDEX**: daftar karya tipografis raksasa full-width
+dengan **floating image preview** yang mengikuti kursor. Intro: tagline
+scramble-decode. Dibangun sebagai static SPA yang jalan identik di GitHub Pages
+maupun Vercel dari codebase yang sama.
 
 > Status: iseng-iseng, just for fun. Bukan situs open-for-work.
 
@@ -36,17 +38,16 @@ jalan identik di GitHub Pages maupun Vercel dari codebase yang sama.
 
 ### Intro (setiap refresh)
 
-Layar paper + 4 baris teks **scramble-decode** ala terminal (IBM Plex Mono,
+Layar paper + 3 baris tagline **ter-decode char-by-char** (scramble, Heros,
 kiri-bawah):
 
 ```
-> wah-anggaaa :: personal playground
-> decoding identity ............ [ok]
-> loading 11 imaginary brands .. [ok]
-> ready.
+imaginary brands
+real craft
+zero invoices
 ```
 
-±1,7 dtk, lalu tirai naik 0,75 dtk membuka hero. Reduced-motion: statis + cepat.
+±1,9 dtk, lalu tirai naik 0,75 dtk membuka hero. Reduced-motion: statis + cepat.
 
 ### `/` — Home
 
@@ -54,16 +55,17 @@ kiri-bawah):
    ZERO INVOICES.`) dengan reveal line-mask, role serif italic
    `Designer & Creative Developer`, label `[ just for fun ]` `[ jakarta — wib ]`,
    CTA `say hi ↗` + `[ about ]`.
-2. **Selected Works — DRAG RAIL (signature)** — 11 thumbnail warna asli dalam rel
-   horizontal full-bleed: drag pointer/touch + inertia, wheel vertical → horizontal,
-   keyboard ← →, rubber-band di ujung. Counter `001 / 011` mengikuti posisi (bukan
-   bar — aturan tanpa garis). Di bawahnya **indeks 001–011** sinkron dua arah: hover
-   indeks → rail geser; rail di tengah → indeks aktif. Klik = buka case study.
+2. **Selected Works — THE INDEX (signature)** — daftar tipografis full-width:
+   11 baris `indeks · JUDUL RAKSASA · kategori (serif italic) · tahun`. Hover baris:
+   judul menyala + bergeser, dan **floating preview** (thumbnail warna asli,
+   lerp mengikuti kursor + rotasi mengikuti kecepatan) muncul di sampingnya.
+   Label kanan atas menampilkan `001 / 011` yang mengikuti baris aktif.
+   Klik baris = buka case study. Mobile: baris ringkas, tanpa floating preview.
 3. **Manifesto** — kalimat besar serif italic, opacity **kata-per-kata mengikuti
    scroll** (scrub rAF, mutasi DOM langsung).
 4. **Say Hi** — link raksasa full-width, hover shift → `/contact`.
-5. **Footer** — `WAH:ANGGAAA` cascade per huruf + wave saat hover, jam WIB live,
-   status studio kocak.
+5. **Footer** — serif italic raksasa *just for fun.* (line-mask reveal),
+   jam WIB live, status studio kocak.
 
 ### `/about`
 
@@ -106,7 +108,7 @@ frontmatter = langsung terbit.
 | Animasi scroll/keyframe | **GSAP 3.15** + **ScrollTrigger**                                   |
 | Animasi komponen     | **Motion 12** (`motion/react`: AnimatePresence, whileInView)           |
 | SEO / analytics      | **`@vercel/analytics`** + komponen `Seo.tsx` (OG kanonis + JSON-LD)    |
-| Font                 | Self-hosted woff2: **TeXGyreHerosCondensed** (GUST e-foundry) + **Junicode** (Peter S. Baker, OFL) + **IBM Plex Mono** |
+| Font                 | Self-hosted woff2, **2 saja**: **TeXGyreHerosCondensed** (GUST e-foundry) + **Junicode** (Peter S. Baker, OFL) |
 | Deploy               | GitHub Pages + Vercel (root) — satu codebase                           |
 
 > Three.js, Lenis, custom cursor, dan menu overlay sudah **dibuang** di redesign v2 —
@@ -119,26 +121,23 @@ frontmatter = langsung terbit.
 Semua animasi memakai properti murah-GPU (**transform & opacity saja**), dengan
 fallback `prefers-reduced-motion` di setiap bagian.
 
-### 1. Drag rail (`src/components/WorksRail.tsx`)
+### 1. The Index + floating preview (`src/components/WorksIndex.tsx`)
 
-Mesin custom ringan (tanpa library drag):
-
-- Loop rAF tunggal: `lerp` posisi → `target` (faktor 0.085) + **inertia**
-  (velocity dari fling, decay 0.92/frame) + **rubber-band** 48px di ujung.
-- Sumber input: pointer drag (pointer capture, `touch-action: pan-y` agar scroll
-  vertikal native tetap jalan di mobile), wheel (di-intercept hanya saat rail
-  terlihat & tidak di ujung — `preventDefault`), keyboard ← →.
-- Sinkron dua arah dengan indeks: hover/focus item indeks → `target = i × stride`
-  (rail meluncur ke sana); posisi rail → indeks aktif (dihitung dari stride yang
-  diukur dari DOM, jadi responsif).
-- Mutasi `style.transform` + state React hanya untuk indeks aktif/counter → 60fps.
+- Daftar 11 baris full-width; hover → judul `opacity 50% → 100%` + `translate-x`
+  + label `001 / 011` update (state React hanya indeks aktif).
+- **Floating preview**: `<div fixed>` berisi thumbnail (swap per karya, `key`
+  remount). Loop rAF tunggal: posisi preview di-**lerp** ke kursor (faktor 0.14),
+  rotasi ±9° dihitung dari kecepatan horizontal mouse (decay lerp). Posisi di-
+  clamp agar tak keluar viewport. `pointer-events: none`, opacity in/out 300ms.
+- Hanya di `pointer: fine` (desktop); mobile = interaksi baris langsung.
+- Mutasi `style.transform` langsung → 60fps, tanpa re-render per frame.
 
 ### 2. Intro scramble (`src/components/Intro.tsx`)
 
-- Char pool `!<>-_/[]{}—=+*^?#`, resolve kiri→kanan per baris (4 baris, staggered,
-  ±1,7 dtk total), `textContent` langsung (tanpa re-render), cursor block blink.
+- Char pool `!<>-_/[]{}—=+*^?#`, resolve kiri→kanan per baris (3 baris, staggered,
+  ±1,9 dtk total), `textContent` langsung (tanpa re-render).
 - Selesai → tirai `yPercent: 100 → -100` (0,75 dtk, power2.inOut) → konten mount.
-- Reduced motion: teks statis 0,9 dtk, tirai 0,25 dtk.
+- Reduced motion: teks statis 0,95 dtk, tirai 0,25 dtk.
 
 ### 3. Transisi halaman — curtain paper (`src/lib/transition.tsx`)
 
@@ -166,10 +165,9 @@ Guard `busyRef` anti navigasi ganda. Reduced motion: crossfade 0,12 dtk.
   kontennya** — semua gambar karya & portrait warna asli penuh (tanpa grayscale).
 - **Tanpa garis (aturan keras)**: nol border/rules/divider/underline — pemisah
   adalah whitespace. Satu-satunya outline: focus ring aksesibilitas.
-- **3 font, 3 peran** (self-hosted woff2, subset latin):
-  - `Heros Cn` (TeXGyreHerosCondensed) — display, headline, nav, body
-  - `Junicode Cn` — aksen serif (role, quote, judul jurnal, challenge/outcome)
-  - `IBM Plex Mono` — mikro-tekst terminal (intro, counter, label meta, colophon)
+- **2 font, 2 peran** (self-hosted woff2, subset latin) — **tanpa font mono**:
+  - `Heros Cn` (TeXGyreHerosCondensed) — display, headline, nav, body, label kecil (class `.lbl`: uppercase + tracking)
+  - `Junicode Cn` — aksen serif (role, quote, kategori, judul jurnal, challenge/outcome, footer)
 - **Larangan permanen**: pill, marquee otomatis, glassmorphism, gradien, cursor
   custom, grayscale/monokrom pada gambar, garis dekoratif.
 - Sudut tajam (radius ≤2px), grid 12 kolom, unit `clamp()`.
@@ -191,12 +189,12 @@ drag-rail), Inspirux (drift), Onoera (ritme intro).
 └── src/
     ├── main.tsx             → entry
     ├── App.tsx              → shell: Intro gate + Header + Routes + TransitionProvider
-    ├── index.css            → @font-face, token @theme (paper/ink/font), base, .md-body
+    ├── index.css            → @font-face, token @theme (paper/ink/font), base, .lbl, .text-outline, .md-body
     ├── components/
     │   ├── Intro.tsx        → intro terminal scramble + tirai
     │   ├── Header.tsx       → header tipis (tanpa border; bg paper saat scroll)
     │   ├── Footer.tsx       → footer raksasa cascade + wave + jam + status studio
-    │   ├── WorksRail.tsx    → drag rail + indeks 001–011 (signature)
+    │   ├── WorksIndex.tsx   → the index: daftar raksasa + floating preview (signature)
     │   └── Seo.tsx          → title/desc/OG kanonis + JSON-LD per route
     ├── routes/
     │   ├── Home.tsx         → hero + drag rail + manifesto + say hi
@@ -212,7 +210,7 @@ drag-rail), Inspirux (drift), Onoera (ritme intro).
     │   ├── useJakartaTime.ts   → jam WIB live per detik
     │   └── useStudioStatus.ts  → status kocak mengikuti jam Jakarta
     ├── lib/transition.tsx   → TLink + curtain timeline (GSAP)
-    └── assets/fonts/        → 6 file woff2 self-hosted
+    └── assets/fonts/        → 4 file woff2 self-hosted (2 family × 2 weight)
 ```
 
 Tulisan jurnal: `content/journal/*.md` (frontmatter: title/date/desc/tags).
@@ -265,4 +263,4 @@ Satu codebase, dua target — dibedakan otomatis oleh `vite.config.ts`:
 ---
 
 Dibuat iseng-iseng dengan React + GSAP. © 2026 WAH:ANGGAAA.
-Font: TeX Gyre Heros (GUST e-foundry, GUST Font License) · Junicode (Peter S. Baker, SIL OFL 1.1) · IBM Plex Mono (IBM, OFL).
+Font: TeX Gyre Heros (GUST e-foundry, GUST Font License) · Junicode (Peter S. Baker, SIL OFL 1.1).

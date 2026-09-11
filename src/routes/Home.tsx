@@ -1,24 +1,18 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { motion } from 'motion/react';
 import Footer from '../components/Footer';
 import Seo from '../components/Seo';
-import WorksRail from '../components/WorksRail';
+import WorksIndex from '../components/WorksIndex';
 import { TLink } from '../lib/transition';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
-function Meta({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return (
-    <p className={`font-mono text-[11px] uppercase tracking-[0.18em] text-ink ${className}`}>{children}</p>
-  );
-}
-
-/** Baris raksasa dengan reveal line-mask. */
+/** Baris dengan reveal line-mask. */
 function MaskLine({ children, delay = 0 }: { children: ReactNode; delay?: number }) {
   const reduced =
     typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   return (
-    <span className="block overflow-hidden pb-[0.06em] -mb-[0.06em]">
+    <span className="block overflow-hidden pb-[0.08em] -mb-[0.08em]">
       <motion.span
         className="block will-change-transform"
         initial={reduced ? { y: 0 } : { y: '112%' }}
@@ -31,7 +25,7 @@ function MaskLine({ children, delay = 0 }: { children: ReactNode; delay?: number
   );
 }
 
-/* ---------- manifesto: opacity kata-per-kata mengikuti scroll (scrub) ---------- */
+/* manifesto: opacity kata-per-kata mengikuti scroll (scrub) */
 function ManifestoScrub({ text }: { text: string }) {
   const ref = useRef<HTMLParagraphElement>(null);
   const words = text.split(' ');
@@ -63,7 +57,7 @@ function ManifestoScrub({ text }: { text: string }) {
   return (
     <p
       ref={ref}
-      className="font-serif italic leading-[1.18] text-[clamp(1.7rem,4vw,3.1rem)] max-w-[24ch] text-ink"
+      className="font-serif italic leading-[1.18] text-[clamp(1.8rem,4.2vw,3.3rem)] max-w-[24ch] text-ink"
     >
       {words.map((w, i) => (
         <span key={`${w}-${i}`} data-w style={{ opacity: 0.12 }} className="inline-block mr-[0.27em]">
@@ -78,46 +72,46 @@ export default function Home() {
   return (
     <>
       <Seo />
-      {/* ============ HERO ============ */}
-      <section className="relative min-h-svh flex flex-col justify-end overflow-hidden px-5 md:px-10 pt-28 pb-8">
-        <Meta className="absolute top-[4.5rem] md:top-[5.5rem] left-5 md:left-10 text-ink/60">
-          [ portfolio — vol.01 ]
-        </Meta>
-        <Meta className="absolute top-[4.5rem] md:top-[5.5rem] right-5 md:right-10 text-right hidden sm:block text-ink/60">
-          11 works — '26
-        </Meta>
+      {/* ============ HERO — poster 3 treatment ============ */}
+      <section className="relative min-h-svh flex flex-col justify-center overflow-hidden px-5 md:px-10 pt-28 pb-10">
+        <div className="flex justify-between w-full mb-10 md:mb-16">
+          <p className="lbl text-ink/50">[ portfolio — vol.01 ]</p>
+          <p className="lbl text-ink/50 hidden sm:block">11 works — '26</p>
+        </div>
 
-        <h1 className="font-display font-bold uppercase tracking-[-0.015em] leading-[0.86] text-[clamp(3.2rem,12.5vw,13rem)]">
-          <MaskLine>Imaginary Brands.</MaskLine>
-          <MaskLine delay={0.12}>Real Craft.</MaskLine>
-          <MaskLine delay={0.24}>Zero Invoices.</MaskLine>
+        <h1>
+          <MaskLine>
+            <span className="font-display font-bold uppercase tracking-[-0.015em] leading-[0.88] text-[clamp(3rem,11vw,11rem)]">
+              Imaginary Brands.
+            </span>
+          </MaskLine>
+          <MaskLine delay={0.12}>
+            <span className="font-serif italic leading-[1.04] text-[clamp(2.4rem,8.6vw,8.6rem)] text-ink md:ml-[10vw]">
+              Real Craft.
+            </span>
+          </MaskLine>
+          <MaskLine delay={0.24}>
+            <span className="text-outline font-display font-bold uppercase tracking-[-0.015em] leading-[0.88] text-[clamp(3rem,11vw,11rem)]">
+              Zero Invoices.
+            </span>
+          </MaskLine>
         </h1>
 
-        {/* role — serif italic */}
-        <motion.p
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.3, delay: 0.55, ease: [...EASE] }}
-          className="mt-6 md:mt-8 ml-1 md:ml-[24vw] font-serif italic text-[clamp(1.25rem,3vw,2.1rem)] text-ink/70"
-        >
-          Designer &amp; Creative Developer
-        </motion.p>
-
-        <div className="grid md:grid-cols-12 gap-6 items-end mt-10 md:mt-14">
+        <div className="grid md:grid-cols-12 gap-6 items-end mt-12 md:mt-16">
           <motion.p
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.3, delay: 0.7, ease: [...EASE] }}
-            className="md:col-span-4 text-[15px] leading-relaxed text-ink/70 max-w-[34ch]"
+            className="md:col-span-5 font-serif italic text-[clamp(1.15rem,2.4vw,1.7rem)] text-ink/75"
           >
-            Taman bermain satu orang milik Angga — dibangun di jam-jam curian:
-            tanpa klien, tanpa brief, cuma obsesi.
+            Designer &amp; Creative Developer — taman bermain satu orang, dibangun di jam-jam
+            curian: tanpa klien, tanpa brief, cuma obsesi.
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.3, delay: 0.85, ease: [...EASE] }}
-            className="md:col-span-5 flex items-center gap-8"
+            className="md:col-span-4 flex items-center gap-8"
           >
             <TLink
               to="/contact"
@@ -125,7 +119,7 @@ export default function Home() {
             >
               say hi <span className="inline-block transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1">↗</span>
             </TLink>
-            <TLink to="/about" className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink/50 hover:text-ink transition-colors">
+            <TLink to="/about" className="lbl text-ink/50 hover:text-ink transition-colors">
               [ about ]
             </TLink>
           </motion.div>
@@ -133,20 +127,20 @@ export default function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 1.3, delay: 1.0, ease: [...EASE] }}
-            className="md:col-span-3 md:text-right space-y-2"
+            className="md:col-span-3 md:text-right space-y-1"
           >
-            <Meta className="text-ink/50">[ just for fun ] · [ jakarta — wib ]</Meta>
-            <Meta className="text-ink/40">scroll ↓</Meta>
+            <p className="lbl text-ink/50">[ just for fun ] · [ jakarta — wib ]</p>
+            <p className="lbl text-ink/40">scroll ↓</p>
           </motion.div>
         </div>
       </section>
 
-      {/* ============ SELECTED WORKS — DRAG RAIL + INDEKS ============ */}
-      <WorksRail />
+      {/* ============ SELECTED WORKS — THE INDEX ============ */}
+      <WorksIndex />
 
       {/* ============ MANIFESTO ============ */}
       <section className="px-5 md:px-10 pt-32 md:pt-48 pb-8">
-        <Meta className="mb-8 text-ink/50">[ manifesto ]</Meta>
+        <p className="lbl text-ink/50 mb-8">[ manifesto ]</p>
         <ManifestoScrub text="Iseng-iseng yang diniatkan. Satu halaman, satu dunia kecil — fiktif tapi digarap sampai selesai." />
         <div className="mt-10 md:ml-[40vw]">
           <TLink

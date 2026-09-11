@@ -244,3 +244,17 @@ src/
 
 ---
 *Ditulis oleh arena-agent, 2026-09-11. Rencana, bukan doktrin — semua baris boleh diganggu sebelum P0 mulai.*
+
+## 10. v2.2 — Rombak total (round 4, 2026-09-11)
+
+**Keputusan user:** lebih beda dari v1, **jangan font mono**, UI rombak total.
+
+| Aspek | v2.1 | v2.2 |
+|---|---|---|
+| Font | 3 (termasuk IBM Plex Mono) | **2**: Heros Cn + Junicode Cn. Label = class `.lbl` (Heros uppercase tracking). |
+| Intro | 4 baris terminal (`>`, `[ok]`, mono) | 3 baris tagline **scramble-decode** (Heros, kiri-bawah, tanpa chrome terminal) |
+| Hero | 3 baris tagline uniform, kiri bawah | **Poster 3 treatment**: bold / serif italic (indent) / **outline** (`.text-outline`, fallback aman) — komposisi centered |
+| Works | Drag rail horizontal + indeks 2 kolom | **THE INDEX**: daftar full-width `001 · JUDUL RAKSASA · kategori serif · tahun`, hover = judul menyala + **floating preview** (lerp + rotasi ±9°, clamp viewport) |
+| Footer | Brand word cascade (mirip v1) | *just for fun.* serif italic raksasa, line-mask |
+| Case study | Label mono + meta grid | Label `.lbl`, kategori serif italic, **ghost number outline** di belakang judul |
+| Tetap | paper/ink, tanpa garis, gambar warna asli, portrait OK, scramble, curtain | sama |

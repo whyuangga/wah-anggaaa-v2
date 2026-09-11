@@ -39,7 +39,7 @@ function BrandGenerator() {
 
   return (
     <div className="mt-16 md:mt-24 pt-10">
-      <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink/60">
+      <p className="lbl text-ink/60">
         [ brand khayalan hari ini ]
       </p>
       <p className="mt-4 text-[15px] text-ink/60 max-w-[42ch] leading-relaxed">
@@ -58,11 +58,11 @@ function BrandGenerator() {
             <p className="font-display font-bold uppercase tracking-[-0.01em] leading-[0.95] text-[clamp(2.2rem,7vw,4.5rem)]">
               {brand.name}
             </p>
-            <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.18em] text-ink/45">— {brand.cat}</p>
+            <p className="mt-3 lbl text-ink/45">— {brand.cat}</p>
           </motion.div>
         </AnimatePresence>
       </div>
-      <div className="mt-6 flex items-center gap-6 font-mono text-[11px] uppercase tracking-[0.18em]">
+      <div className="mt-6 flex items-center gap-6 lbl">
         <button onClick={again} className="text-ink/70 hover:text-ink transition-colors cursor-pointer">
           [ racik lagi ]
         </button>
@@ -81,7 +81,7 @@ export default function Contact() {
     <>
       <Seo title="kontak" path="/contact" />
       <section className="px-5 md:px-10 pt-32 md:pt-44 min-h-[80svh]">
-        <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink/60">[ contact ]</p>
+        <p className="lbl text-ink/60">[ contact ]</p>
 
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
@@ -116,7 +116,7 @@ export default function Contact() {
               <span className="font-display font-medium uppercase tracking-tight text-2xl md:text-4xl">
                 {s.label}
               </span>
-              <span className="font-mono text-[11px] uppercase tracking-[0.2em] opacity-40 group-hover:opacity-70 transition-opacity">
+              <span className="lbl opacity-40 group-hover:opacity-70 transition-opacity">
                 ↗
               </span>
             </a>
@@ -125,7 +125,7 @@ export default function Contact() {
 
         <BrandGenerator />
 
-        <div className="mt-12 flex flex-col md:flex-row justify-between gap-3 font-mono text-[11px] uppercase tracking-[0.16em] text-ink/50">
+        <div className="mt-12 flex flex-col md:flex-row justify-between gap-3 lbl text-ink/50">
           <p>iseng-iseng welcome — no brief, no deadline, no drama</p>
           <p>
             based in jakarta (utc+7) — {time} wib <span className="text-ink/30">[ just for fun ]</span>

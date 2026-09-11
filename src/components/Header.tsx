@@ -51,7 +51,7 @@ export default function Header() {
                 key={l.to}
                 onClick={() => go(l.to)}
                 aria-current={active ? 'page' : undefined}
-                className={`font-mono text-[10px] md:text-[11px] uppercase tracking-[0.16em] transition-opacity cursor-pointer ${
+                className={`lbl text-[10px] md:text-[11px] transition-opacity cursor-pointer ${
                   active ? 'opacity-100' : 'opacity-50 hover:opacity-100'
                 }`}
               >
@@ -59,7 +59,7 @@ export default function Header() {
               </button>
             );
           })}
-          <p className="hidden md:block font-mono text-[11px] tracking-[0.12em] uppercase opacity-50">
+          <p className="hidden md:block lbl uppercase opacity-50">
             jkt — {time}
           </p>
         </div>
