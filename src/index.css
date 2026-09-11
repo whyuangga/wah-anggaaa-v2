@@ -1,0 +1,152 @@
+@import "tailwindcss";
+
+/* Font self-hosted:
+   - TeXGyreHerosCondensed (GUST e-foundry, GUST Font License) → "Heros Cn"
+   - Junicode (Peter S. Baker, SIL OFL 1.1) → "Junicode Cn"
+   - IBM Plex Mono (IBM, OFL) */
+@font-face {
+  font-family: "Heros Cn";
+  src: url("./assets/fonts/heros-cn-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Heros Cn";
+  src: url("./assets/fonts/heros-cn-bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Junicode Cn";
+  src: url("./assets/fonts/junicode-cn-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Junicode Cn";
+  src: url("./assets/fonts/junicode-cn-bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("./assets/fonts/ibm-plex-mono-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("./assets/fonts/ibm-plex-mono-500.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  /* palet — 2 warna, warna lain hidup di gambar */
+  --color-paper: #eae8e1;
+  --color-ink: #0d0d0c;
+
+  --font-display: "Heros Cn", "Arial Narrow", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Junicode Cn", Georgia, "Times New Roman", serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  background: var(--color-paper);
+}
+
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  overflow-x: hidden;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #eae8e1;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(13, 13, 12, 0.22);
+  border-radius: 0;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(13, 13, 12, 0.4);
+}
+
+/* ---------- body jurnal (markdown) ---------- */
+.md-body {
+  font-size: 16px;
+  line-height: 1.65;
+  color: rgba(13, 13, 12, 0.88);
+}
+.md-body h2 {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  font-size: clamp(1.3rem, 2.6vw, 1.7rem);
+  margin: 2.1em 0 0.55em;
+  color: var(--color-ink);
+}
+.md-body p {
+  margin: 0 0 1.1em;
+}
+.md-body a {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.md-body a:hover {
+  opacity: 0.65;
+}
+.md-body ul {
+  padding-left: 1.25em;
+  margin: 0 0 1.15em;
+  list-style: disc;
+}
+.md-body li {
+  margin-bottom: 0.45em;
+}
+.md-body li::marker {
+  color: rgba(13, 13, 12, 0.35);
+}
+.md-body blockquote {
+  margin: 1.7em 0;
+  padding: 0 0 0 1.1em;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1.18em;
+  color: var(--color-ink);
+}
+.md-body strong {
+  font-weight: 700;
+  color: var(--color-ink);
+}
+.md-body em {
+  font-style: italic;
+}
+.md-body code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: rgba(13, 13, 12, 0.06);
+  padding: 0.15em 0.4em;
+}

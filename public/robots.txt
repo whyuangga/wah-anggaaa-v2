@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://wah-anggaaa.vercel.app/sitemap.xml
