@@ -65,14 +65,17 @@ header ala HUYMI**:
   aktif di tengah tegak 0°, sebelumnya ngintip di atas & berikutnya di
   bawah (miring ±5,5°, melurus saat masuk tengah), jarak antar kartu
   0,55×tinggi stage; bergerak bersama scroll (bukan crossfade tumpuk)
-- **looping tanpa ujung**: scroll dipetakan ke indeks virtual 2 putaran
-  (0→22) dengan **jarak-modulo**, jadi …010 → 011 → 001 → 002 mulus
-  dua arah — tanpa rewind, tanpa lompatan; di luar 2 putaran pin lepas
-  natural (tidak ada jebakan scroll)
+- **looping tanpa ujung yang SESUNGGUHNYA tanpa ujung**: scroll dipetakan
+  ke indeks virtual 2 putaran (0→22) dengan **jarak-modulo** — …010 →
+  011 → 001 → 002 mulus dua arah; saat menyenggol batas bawah, posisi
+  digeser persis satu putaran (frame-nya identik → tak terlihat), jadi
+  wheel/scroll/keyboard **tidak pernah mentok** dan pin tidak pernah lepas
+- **klik kartu aktif → case study** (overlay button di slot tengah;
+  `pointer-events-auto` wajib karena container reel `pointer-events-none`)
 - **list semua proyek** di kanan (kategori kecil + nama serif + blurb) —
-  item aktif menyala, yang lain memudar; list dirender 3 lipatan sehingga
-  ikut **looping mulus** dan tidak pernah bolong di ujung; klik item =
-  lompat lewat putaran terdekat
+  item aktif menyala, yang lain memudar; list dirender 4 lipatan sehingga
+  ikut **looping mulus** dan tidak pernah bolong (termasuk saat
+  auto-recenter di batas); klik item = lompat lewat putaran terdekat
 - **meta** kiri tengah (role / launching / category, kolom label:value)
 - **angka raksasa** kiri bawah: `nr.` + `1`…`11` (Heros bold, tanpa zero-pad) + `/ 11`
 - kiri atas: teks vertikal `portfolio '26` + `11 works — jakarta, id`
@@ -97,10 +100,9 @@ header ala HUYMI**:
 
 ### `/about`
 
-Judul raksasa dua baris masuk dari sisi berlawanan, **foto portrait** (warna asli;
-slot `public/images/about-portrait.webp` — placeholder sampai diisi), bio
+Judul raksasa dua baris masuk dari sisi berlawanan, bio
 tipografis, capabilities, recognition (drift konvergen ala Inspirux), colophon
-+ kredit font.
++ kredit font. *(Foto portrait dihapus dari halaman — v2.10.)*
 
 ### `/contact`
 
@@ -110,9 +112,11 @@ tipografis, capabilities, recognition (drift konvergen ala Inspirux), colophon
 
 ### `/works/:slug` (11 halaman)
 
-Case study per karya: meta grid (klien/tahun/peran/stack), blurb, tantangan & hasil
-(serif italic), proses + galeri **warna asli** (lazy + blur-up), stats ngarang,
-visit live site, prev/next.
+Case study per karya — **foto hero di paling atas** dengan **efek fokus
+blur** (blur→tajam + settle saat masuk; galeri ikut blur-up), lalu judul
+raksasa + deskripsi di bawahnya, meta grid (klien/tahun/peran/stack),
+tantangan & hasil (serif italic), proses + galeri **warna asli** (lazy),
+stats ngarang, visit live site, prev/next, `← semua karya` di kanan-atas.
 
 ### `/journal` & `/journal/:slug`
 
@@ -177,8 +181,14 @@ fallback `prefers-reduced-motion` di setiap bagian.
   identik dengan hasil fling → transisi tanpa lompatan.
 - **Tinggi item list responsif**: `itemH()` = 60px (<768px) / 84px (md) —
   HARUS sinkron dengan class `h-[60px] md:h-[84px]` di markup.
-- Baris `case study → / live website ↗` di bawah foto **dihapus** (v2.9);
-  akses case study via URL `/works/:slug`.
+- **Auto-recenter tanpa ujung**: listener `scroll` non-invasif menggeser
+  `window.scrollY` mundur tepat N langkah saat menyentuh `st.end` (frame
+  identik karena semua posisi modulo), plus listener `wheel` (non-passive)
+  yang preventDefault + reposition di dasar → wheel-down terus mengalir
+  tanpa pernah mentok; keyboard ↑/↓ di ujung juga melompat satu putaran
+  dulu sebelum langkah halus. Pin TIDAK pernah lepas.
+- Baris `case study → / live website ↗` dihapus (v2.9); akses case =
+  **klik kartu aktif** di home (overlay `pointer-events-auto`).
 - Setup/cleanup di **`useLayoutEffect`** (ScrollTrigger pin mem-wrap section
   dengan `pin-spacer`; kill lewat effect pasif → React gagal `removeChild`).
 - Reduced motion: 11 layar statis berurutan (tanpa pin/tween).
@@ -247,10 +257,11 @@ drag-rail), Inspirux (drift), Onoera (ritme intro).
     │   ├── Header.tsx       → header tipis (tanpa border; bg paper saat scroll)
     │   ├── Footer.tsx       → footer raksasa cascade + wave + jam + status studio
     │   ├── WorksHuy.tsx     → works index ala HUYMI: satu layar, scroll = ganti proyek
+    │   ├── MenuOverlay.tsx  → menu overlay mobile IDENTIK di semua halaman
     │   └── Seo.tsx          → title/desc/OG kanonis + JSON-LD per route
     ├── routes/
     │   ├── Home.tsx         → SATU KANVAS: hanya <WorksHuy /> (ala HUYMI)
-    │   ├── About.tsx        → portrait + bio + capabilities + recognition + colophon
+    │   ├── About.tsx        → bio + capabilities + recognition + colophon (tanpa portrait)
     │   ├── Contact.tsx      → say hi + email + sosial + generator brand
     │   ├── WorkCase.tsx     → case study per karya (/works/:slug)
     │   ├── Journal.tsx      → daftar tulisan

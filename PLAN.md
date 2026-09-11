@@ -436,3 +436,39 @@ list terisi penuh di kedua ujung; tidak ada error konsol; reduced =
 fling terbukti (seq angka unik ≥4 saat load → endap di "1"), desktop
 center 720✓, mobile list 33 item h=60✓ tanpa overlap (cardRight 211 <
 listLeft 226), wrap & snap & jump tetap, reduced statis, tanpa error.
+
+
+## 18. v2.10 — Klik kartu → case, loop TANPA UJUNG beneran, menu mobile konsisten (2026-09-12)
+
+**Permintaan user (4):**
+1. Klik kartu reel → buka case study; case dirombak: foto di ATAS, deskripsi
+   di bawahnya; tambah efek fokus blur.
+2. Hamburger di SEMUA halaman (sebelumnya cuma home).
+3. Hapus foto portrait di /about.
+4. Looping masih mentok di bawah (pin lepas) → harus benar-benar tanpa ujung.
+
+### Implementasi
+- `WorksHuy`: overlay `button` pada slot aktif (klik = `go(/works/slug)`);
+  `pointer-events-auto` eksplisit — container `pointer-events-none` menular
+  ke anak. Fling `onComplete` kini sync `apply(st.progress×TOTAL)` (bukan
+  hardcode 0) — user yang scroll saat fling tidak di-karetkan ke 001.
+- **Loop tanpa ujung**: listener `scroll` menggeser balik persis 1 putaran
+  (N×h px) saat `y ≥ st.end−0.5` dan arah turun (frame identik → tak
+  terlihat; 4 lipatan list membuatnya selalu penuh). Wheel-down di dasar
+  di-intercept (non-passive + preventDefault) karena di mentok native tidak
+  ada scroll-event lagi. Keyboard ↑/↓ di ujung: lompat 1 putaran dulu, baru
+  langkah halus. Pin tidak pernah lepas → tidak pernah "mentok".
+- `MenuOverlay.tsx` (shared): dipakai WorksHuy (home) DAN Header (semua
+  halaman lain, mobile-only, + `[ just for fun ]` kanan). Header lama
+  (jam JKT) tetap desktop-only seperti dulu.
+- `About`: blok portrait + komponen `Portrait` dihapus; teks jadi kolom
+  `max-w-2xl`. `WorkCase`: hero dipindah ke paling atas dengan fokus blur
+  (`filter: blur(26px) → 0` + scale settle), judul & deskripsi di bawah,
+  link `← semua karya`, Reveal & galeri Figure ikut blur-in.
+
+### Verifikasi (e2e `scripts/test-reel.mjs`, 37/37 PASS)
+Baru: klik kartu → `/works/lexier`; case `img.top < h1.top`; link balik;
+auto-recenter di batas (y=19800→9900); wheel-down di dasar menembus;
+ArrowDown di ujung lanjut ke 002; about tanpa portrait; hamburger+overlay
+di /about mobile; regresi loop/snap/jump/fling/reduced/mobile semua tetap
+hijau. tsc + build bersih.

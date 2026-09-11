@@ -79,7 +79,7 @@ ok('011 ngintip atas, 002 di bawah', s.slots[10].vis === 'visible' && s.slots[10
 ok('tengah 0°, tetangga ±5,5°', rot(s.slots[0].tf) === 0 && Math.abs(rot(s.slots[10].tf) - 5.5) < 0.02);
 
 // ---- 2. list desktop ----
-ok('list 3 lipatan (33 item), ITEM=84', s.nBtns === 33 && s.activeBtnH === 84, `${s.nBtns} item, h=${s.activeBtnH}`);
+ok('list 4 lipatan (44 item), ITEM=84', s.nBtns === 44 && s.activeBtnH === 84, `${s.nBtns} item, h=${s.activeBtnH}`);
 ok('item aktif ter-center di 450', Math.abs(s.activeBtnCenter - H / 2) < 2, String(s.activeBtnCenter));
 ok('list terisi atas & bawah', s.hitTop !== null && s.hitBottom !== null);
 
@@ -114,14 +114,64 @@ ok('klik 11 dari 2 → jalur terdekat', s.activeNo === '11', s.activeNo);
 const yAfter = await page.evaluate(() => window.scrollY);
 ok('lompat = mundur 2 langkah (bukan maju 9)', Math.abs(yAfter - Y(10)) < 30, `y=${(yAfter - geo.top).toFixed(0)}`);
 
+// ---- 4b. klik kartu tengah → case study ----
+await scrollToF(0, 40);
+await page.waitForTimeout(1100);
+await page.click('button[aria-label^="buka case study"]'); // kartu aktif
+await page.waitForTimeout(2600); // curtain transisi
+const casePath = await page.evaluate(() => location.pathname);
+ok('klik kartu tengah → /works/lexier', casePath.includes('/works/lexier'), casePath);
+await page.waitForSelector('h1', { timeout: 8000 });
+const caseLayout = await page.evaluate(() => {
+  const sec = document.querySelector('section');
+  const img = sec.querySelector('img');
+  const h1 = sec.querySelector('h1');
+  const back = [...sec.querySelectorAll('a,button')].some((b) => b.textContent.includes('semua karya'));
+  return {
+    photoTop: img?.getBoundingClientRect().top,
+    titleTop: h1?.getBoundingClientRect().top,
+    back,
+    // fokus-blur: hero wrapper punya animasi filter (gsap/motion set inline)
+    heroFilter: getComputedStyle(img.parentElement).filter || '(none)',
+  };
+});
+ok('case: foto di ATAS, judul+deskripsi di bawah', caseLayout.photoTop < caseLayout.titleTop, `img y=${caseLayout.photoTop?.toFixed(0)} < h1 y=${caseLayout.titleTop?.toFixed(0)}`);
+ok('case: link balik "← semua karya" ada', caseLayout.back === true);
+await page.screenshot({ path: SHOTS + '/10-case-focus.png' });
+await page.goBack({ waitUntil: 'networkidle' }).catch(() => {});
+await page.waitForSelector('section[aria-label^="Selected works"]', { timeout: 20000 });
+await page.waitForTimeout(2600); // fling ulang di home → tunggu settle penuh
+
 // ---- 5. ujung + error ----
 await scrollToF(TOTAL);
 s = await state();
 ok('f=22 → 1 lagi', s.activeNo === '1', s.activeNo);
-const afterEnd = await page.evaluate(() => { window.scrollTo({ top: document.body.scrollHeight, behavior: 'auto' }); });
-await page.waitForTimeout(350);
-const yEnd = await page.evaluate(() => window.scrollY);
-ok('tidak ada jebakan di ujung', yEnd >= Y(TOTAL) - 2);
+// di ujung bawah: posisi harus DIRECENTRE satu putaran (identik visual) —
+// bukan lepas pin / mentok
+await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'auto' }));
+await page.waitForTimeout(500);
+const wrapTest = await page.evaluate(({ end, start, loopPx }) => {
+  const y = window.scrollY;
+  return { y, nearRecenter: Math.abs(y - (end - loopPx)) < 4 };
+}, { end: Y(TOTAL), start: geo.top, loopPx: geo.h * N });
+ok('ujung bawah: auto-recenter satu putaran (bukan mentok)', wrapTest.nearRecenter, `y=${(wrapTest.y - geo.top).toFixed(0)} vs ${N * geo.h}`);
+// wheel-down di dasar → tembus, lanjut muter (bukan mentok)
+await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'auto' }));
+await page.waitForTimeout(260);
+await page.evaluate(() => {
+  window.dispatchEvent(new WheelEvent('wheel', { deltaY: 140, cancelable: true, bubbles: true }));
+});
+await page.waitForTimeout(160);
+const afterWheel = await page.evaluate(({ end, loopPx }) => ({
+  y: window.scrollY,
+  moved: window.scrollY < end - loopPx * 0.5 && window.scrollY > end - loopPx - 200,
+}), { end: Y(TOTAL), loopPx: geo.h * N });
+ok('wheel-down di dasar menembus loop (lanjut muter)', afterWheel.moved, `y=${(afterWheel.y - geo.top).toFixed(0)}`);
+// ArrowDown di ujung pun harus lanjut ke 002, bukan diam
+await page.keyboard.press('ArrowDown');
+await page.waitForTimeout(1600);
+const sEnd = await state();
+ok('ArrowDown di ujung → lanjut (bukan stuck)', ['2'].includes(sEnd.activeNo), sEnd.activeNo);
 ok('desktop: tanpa error', errs.length === 0, errs.join(' | '));
 
 // screenshot
@@ -183,12 +233,12 @@ await page.close();
     const hit = document.elementFromPoint(W - 60, 370)?.closest?.('button[aria-label*="proyek"]')?.getAttribute('aria-label') ?? null;
     return {
       cardRight: card.right, cardW: card.width, listLeft: btn?.left ?? null, listH: btn?.height ?? null,
-      listVisible: btns.length === 33 && ab ? Math.abs(ab.top + ab.height / 2 - 370) < 2 : false,
+      listVisible: btns.length === 44 && ab ? Math.abs(ab.top + ab.height / 2 - 370) < 2 : false,
       activeNo, hit,
       overlaps: btn ? card.right > btn.left + 1 : false,
     };
   }, { W: MOBILE_W });
-  ok('mobile: list judul tampil (33 item, ITEM=60)', mstate.listVisible && mstate.listH === 60, `h=${mstate.listH}`);
+  ok('mobile: list judul tampil (44 item, ITEM=60)', mstate.listVisible && mstate.listH === 60, `h=${mstate.listH}`);
   ok('mobile: kartu reel tidak menutupi list', !mstate.overlaps, `cardRight=${mstate.cardRight?.toFixed(0)} listLeft=${mstate.listLeft?.toFixed(0)}`);
   ok('mobile: kartu kecil (≤48vw)', mstate.cardW <= MOBILE_W * 0.48 + 2, `${mstate.cardW.toFixed(0)}px`);
   ok('mobile: angka = "1" tanpa zero-pad', mstate.activeNo === '1', mstate.activeNo);
@@ -207,6 +257,30 @@ await page.close();
   await m.screenshot({ path: SHOTS + '/09-mobile-labels.png' });
   ok('mobile: tanpa error', em.length === 0, em.join(' | '));
   await m.close();
+}
+
+/* ================= ABOUT (tanpa portrait) + HAMBURGER SEMUA HALAMAN ================= */
+{
+  const a = await browser.newPage({ viewport: { width: MOBILE_W, height: MOBILE_H } });
+  await a.goto(URL + 'about/', { waitUntil: 'networkidle' });
+  await a.waitForTimeout(3400);
+  const aboutState = await a.evaluate(() => ({
+    portrait: !!document.querySelector('img[alt*="Portrait" i]') || !!document.body.textContent.includes('portrait — soon'),
+    burger: !!document.querySelector('button[aria-label="buka menu"]'),
+  }));
+  ok('about: foto portrait hilang', !aboutState.portrait);
+  ok('about (mobile): hamburger ada', aboutState.burger === true);
+  if (aboutState.burger) {
+    await a.click('button[aria-label="buka menu"]');
+    await a.waitForTimeout(250);
+    const overlay = await a.evaluate(() => ({
+      hasWork: [...document.querySelectorAll('button')].some((b) => b.textContent.trim().includes('work.')),
+      hasClose: !!document.querySelector('button[aria-label="tutup menu"]'),
+    }));
+    ok('about (mobile): overlay menu identik home (work/about/contact/journal + tutup)', overlay.hasWork && overlay.hasClose);
+    await a.screenshot({ path: SHOTS + '/11-mobile-menu-about.png' });
+  }
+  await a.close();
 }
 
 /* ================= REDUCED MOTION ================= */

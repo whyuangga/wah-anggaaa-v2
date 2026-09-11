@@ -8,6 +8,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { WORKS } from '../data/works';
 import { useGo } from '../lib/transition';
+import MenuOverlay from './MenuOverlay';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -73,10 +74,6 @@ export default function WorksHuy() {
   const clipTopRef = useRef(0); // tinggi "clipping" atas reel list (hindari chrome)
 
   const goTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
-  const nav = (to: string) => {
-    setMenuOpen(false);
-    go(to);
-  };
 
   const reduced =
     typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -115,7 +112,7 @@ export default function WorksHuy() {
         slot.style.transform = t.transform;
         slot.style.zIndex = String(t.zIndex);
       });
-      // list: 3 lipatan WORKS; item aktif (lipatan tengah) selalu di tengah
+      // list: 4 lipatan WORKS; item aktif (lipatan tengah) selalu di tengah
       if (listRef.current) {
         listRef.current.style.transform = `translateY(${(
           h / 2 -
@@ -168,23 +165,33 @@ export default function WorksHuy() {
       onUpdate: () => apply(flingObj.f),
       onComplete: () => {
         flingingRef.current = false;
-        apply(0); // scroll masih di awal range → identik, tanpa lompatan
+        // sinkronkan dengan posisi scroll SESUNGGUHNYA (bukan hardcode 0) —
+        // kalau user scroll saat fling, view lanjut dari posisi itu, mulus
+        const st = stRef.current;
+        apply(st ? st.progress * TOTAL : 0);
       },
     });
 
     const onKey = (e: KeyboardEvent) => {
       const st = stRef.current;
       if (!st || !st.isActive) return;
-      const step = 1 / TOTAL;
-      const cur = Math.round(st.progress / step) * step;
-      let target: number | null = null;
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown')
-        target = Math.min(1, cur + step);
-      else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp')
-        target = Math.max(0, cur - step);
-      if (target === null) return;
+      const down = e.key === 'ArrowRight' || e.key === 'ArrowDown';
+      const up = e.key === 'ArrowLeft' || e.key === 'ArrowUp';
+      if (!down && !up) return;
       e.preventDefault();
-      window.scrollTo({ top: st.start + (st.end - st.start) * target, behavior: 'smooth' });
+      const yFor = (v: number) => st.start + (st.end - st.start) * (v / TOTAL);
+      let fv = fRef.current;
+      // di ujung range: pindah DULU satu putaran (frame identik — tak terlihat)
+      // lalu langkah halus normal; keyboard pun ikut loop tanpa rewind
+      if (down && fv >= TOTAL - 0.5) {
+        window.scrollTo(0, yFor(fv - N));
+        fv -= N;
+      } else if (up && fv <= 0.5) {
+        window.scrollTo(0, yFor(fv + N));
+        fv += N;
+      }
+      const nv = Math.min(TOTAL, Math.max(0, Math.round(fv) + (down ? 1 : -1)));
+      window.scrollTo({ top: yFor(nv), behavior: 'smooth' });
     };
     const onResize = () => {
       measure();
@@ -193,6 +200,39 @@ export default function WorksHuy() {
     };
     window.addEventListener('keydown', onKey);
     window.addEventListener('resize', onResize);
+
+    // LOOP TANPA UJUNG: saat scroll menyenggol batas bawah, posisi digeser
+    // persis SATU putaran penuh (N langkah). Render di f dan f−N IDENTIK
+    // (semua posisi berbasis modulo; list 4 lipatan) → pemindahan tak bisa
+    // terlihat; lanjut scroll terus = muter terus. st.start = 0 di home
+    // (kanvas = seluruh halaman), jadi batas atas tidak perlu di-wrap —
+    // dari 001 naik lagi ya emang halaman mulai.
+    let lastY = window.scrollY;
+    const onScrollWrap = () => {
+      const st = stRef.current;
+      const y = window.scrollY;
+      if (st && !flingingRef.current && y > lastY && y >= st.end - 0.5) {
+        window.scrollTo(0, y - (st.end - st.start) / LOOPS);
+      }
+      lastY = y;
+    };
+    window.addEventListener('scroll', onScrollWrap, { passive: true });
+
+    // di dasar halaman scroll-event tidak fires lagi (sudah mentok native) →
+    // wheel-down di-cegah lalu dipindah satu putaran + delta-nya, jadi kursor
+    // trackpad/mouse tidak "nyangkut" sedetik pun di ujung
+    const onWheel = (e: WheelEvent) => {
+      const st = stRef.current;
+      if (!st || !st.isActive || flingingRef.current || e.deltaY <= 0) return;
+      if (window.scrollY >= st.end - 1.5) {
+        e.preventDefault();
+        window.scrollTo(
+          0,
+          st.end - (st.end - st.start) / LOOPS + Math.min(e.deltaY, hRef.current * 0.8),
+        );
+      }
+    };
+    window.addEventListener('wheel', onWheel, { passive: false });
 
     // snap manual: scroll berhenti ±160ms → geser halus ke langkah terdekat
     let idleTimer: number | undefined;
@@ -328,6 +368,16 @@ export default function WorksHuy() {
                 className="absolute inset-0 m-auto h-[28svh] max-w-full aspect-[5/6] md:h-[40svh] md:max-h-[440px] md:max-w-[80vw]"
                 style={t}
               >
+                {/* kartu AKTIF bisa diklik → case study.
+                    pointer-events-auto WAJIB — container reel memakai
+                    pointer-events-none dan propertinya ter-inherit */}
+                {j === i && (
+                  <button
+                    onClick={() => go(`/works/${im.slug}`)}
+                    aria-label={`buka case study ${im.title}`}
+                    className="pointer-events-auto absolute inset-0 z-10 cursor-pointer"
+                  />
+                )}
                 <span
                   aria-hidden
                   className="absolute inset-0 bg-cover bg-center"
@@ -345,7 +395,7 @@ export default function WorksHuy() {
           })}
         </div>
 
-        {/* list proyek di kanan (reel LOOPING) — 3 lipatan WORKS agar item
+        {/* list proyek di kanan (reel LOOPING) — 4 lipatan WORKS agar item
             tidak pernah bolong saat wrap; atasnya di-clip di bawah chrome
             agar item yang bergulir tidak menabrak teks kanan-atas.
             Mobile: tampil penuh (kartu sudah digeser ke kiri). */}
@@ -357,7 +407,7 @@ export default function WorksHuy() {
             // yang ikut re-render → bakal menimpa animasi di tengah scrub)
             style={animated ? undefined : { transform: `translateY(${listStaticY}px)` }}
           >
-            {[0, 1, 2].map((copy) =>
+            {[0, 1, 2, 3].map((copy) =>
               WORKS.map((im, jj) => {
                 const j = copy * N + jj;
                 const active = jj === i;
@@ -434,50 +484,9 @@ export default function WorksHuy() {
     );
   };
 
-  /* ---------- overlay menu (mobile) ---------- */
-  const menuOverlay =
-    menuOpen && (
-      <div className="fixed inset-0 z-[80] bg-paper" role="dialog" aria-label="Menu">
-        <div className="flex items-center justify-between px-6 pt-6">
-          <p className="font-display text-[15px] font-bold uppercase tracking-[0.05em]">WAH:ANGGAAA</p>
-          <button
-            onClick={() => setMenuOpen(false)}
-            aria-label="tutup menu"
-            className="cursor-pointer text-[28px] leading-none"
-          >
-            ×
-          </button>
-        </div>
-        {/* panah "→" = efek HOVER (slide-in), sama seperti menu desktop */}
-        <nav className="mt-16 flex flex-col gap-4 px-6 font-serif text-[38px] leading-tight">
-          {[
-            { label: 'work.', act: () => { setMenuOpen(false); goTop(); }, top: true },
-            { label: 'about.', act: () => nav('/about') },
-            { label: 'contact.', act: () => nav('/contact') },
-            { label: 'journal.', act: () => nav('/journal') },
-          ].map((m) => (
-            <button
-              key={m.label}
-              onClick={m.act}
-              className={`menu-item flex cursor-pointer items-center text-left transition-colors ${
-                m.top ? 'text-ink' : 'text-ink/70 hover:text-ink'
-              }`}
-            >
-              <span aria-hidden className="menu-arrow mr-2 inline-block w-7 text-left">
-                →
-              </span>
-              {m.label}
-            </button>
-          ))}
-        </nav>
-        <div className="absolute right-6 bottom-8 left-6 flex justify-between">
-          <p className="lbl text-ink/50">[ just for fun ]</p>
-          <p className="lbl text-ink/50">working from jakarta</p>
-        </div>
-      </div>
-    );
-
-  /* ---------- reduced motion: 11 layar statis ---------- */
+  /* ---------- overlay menu (mobile) — komponen shared MenuOverlay ---------- */
+  const menuOverlay = (<MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} />);
+/* ---------- reduced motion: 11 layar statis ---------- */
   if (reduced) {
     return (
       <section ref={sectionRef} aria-label="Selected works">

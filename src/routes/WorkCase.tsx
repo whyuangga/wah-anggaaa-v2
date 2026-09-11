@@ -25,8 +25,8 @@ function Reveal({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 32 }}
-      whileInView={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, y: 32, filter: 'blur(14px)' }}
+      whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
       viewport={{ once: true, margin: '-80px' }}
       transition={{ duration: 0.9, delay, ease: [...EASE] }}
       className={className}
@@ -52,8 +52,9 @@ function Figure({ src, blur, alt, n }: { src: string; blur: string; alt: string;
           loading="lazy"
           onLoad={(e) => {
             e.currentTarget.style.opacity = '1';
+            e.currentTarget.style.filter = 'blur(0px)';
           }}
-          className="relative w-full object-cover opacity-0 transition-opacity duration-700"
+          className="relative w-full object-cover opacity-0 blur-[8px] transition-[opacity,filter] duration-700"
         />
       </figure>
       <p className="mt-3 lbl text-[10px] text-ink/35">[ fig. {String(n).padStart(2, '0')} ]</p>
@@ -79,41 +80,21 @@ export default function WorkCase() {
         type="article"
         path={`/works/${w.slug}`}
       />
-      <section className="px-5 md:px-10 pt-32 md:pt-44 pb-20 md:pb-28">
-        <Meta>[ case — {w.index} / 011 ]</Meta>
-
-        <div className="relative">
-          <span
-            aria-hidden
-            className="text-outline pointer-events-none select-none absolute -top-4 md:-top-12 right-0 font-display font-bold leading-none text-[clamp(5rem,17vw,13rem)] opacity-[0.14]"
-          >
-            {w.index}
-          </span>
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.6, ease: [...EASE] }}
-            className="relative mt-8 font-display font-bold uppercase tracking-[-0.015em] leading-[0.88] text-[clamp(2.8rem,10vw,9rem)]"
-          >
-            {w.title}
-          </motion.h1>
+      <section className="px-5 md:px-10 pt-28 md:pt-36 pb-20 md:pb-28">
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <Meta>[ case — {Number(w.index)} / {WORKS.length} ]</Meta>
+          <TLink to="/" className="lbl cursor-pointer text-ink/45 transition-opacity hover:text-ink">
+            [ ← semua karya ]
+          </TLink>
         </div>
 
-        <motion.p
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.3, delay: 0.3, ease: [...EASE] }}
-          className="mt-6 font-serif italic text-[clamp(1.1rem,2.4vw,1.7rem)] text-ink/70"
-        >
-          {w.category} — {w.year} — {w.role}
-        </motion.p>
-
-        {/* hero image — warna asli */}
+        {/* foto HERO di paling atas — FOKUS BLUR: blur→tajam + settle (ala
+            kartu home yang tadi diklik "membuka fokus" ke casenya) */}
         <motion.div
-          initial={{ opacity: 0, y: 32 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.2, delay: 0.45, ease: [...EASE] }}
-          className="relative overflow-hidden bg-ink/[0.045] mt-10 md:mt-14"
+          initial={{ opacity: 0, y: 28, scale: 1.05, filter: 'blur(26px)' }}
+          animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+          transition={{ duration: 1.15, ease: [...EASE] }}
+          className="relative overflow-hidden bg-ink/[0.045]"
         >
           <span
             aria-hidden
@@ -126,9 +107,35 @@ export default function WorkCase() {
             onLoad={(e) => {
               e.currentTarget.style.opacity = '1';
             }}
-            className="relative w-full max-h-[62vh] object-cover opacity-0 transition-opacity duration-700"
+            className="relative w-full max-h-[68vh] object-cover opacity-0 transition-opacity duration-700"
           />
         </motion.div>
+
+        <div className="relative mt-10 md:mt-16">
+          <span
+            aria-hidden
+            className="text-outline pointer-events-none select-none absolute -top-4 md:-top-12 right-0 font-display font-bold leading-none text-[clamp(5rem,17vw,13rem)] opacity-[0.14]"
+          >
+            {w.index}
+          </span>
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1.6, delay: 0.25, ease: [...EASE] }}
+            className="relative mt-0 font-display font-bold uppercase tracking-[-0.015em] leading-[0.88] text-[clamp(2.8rem,10vw,9rem)]"
+          >
+            {w.title}
+          </motion.h1>
+        </div>
+
+        <motion.p
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.3, delay: 0.45, ease: [...EASE] }}
+          className="mt-5 font-serif italic text-[clamp(1.1rem,2.4vw,1.7rem)] text-ink/70"
+        >
+          {w.category} — {w.year} — {w.role}
+        </motion.p>
 
         {/* ringkasan */}
         <div className="grid md:grid-cols-12 gap-10 mt-14 md:mt-20">

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { motion } from 'motion/react';
@@ -26,32 +26,6 @@ function Reveal({ children, delay = 0, className = '' }: { children: ReactNode; 
     >
       {children}
     </motion.div>
-  );
-}
-
-/**
- * Foto portrait: pakai public/images/about-portrait.webp kalau ada,
-    kalau belum → placeholder kalem (tanpa garis).
- */
-function Portrait() {
-  const [ok, setOk] = useState(true);
-  const src = `${import.meta.env.BASE_URL}images/about-portrait.webp`;
-  if (ok) {
-    return (
-      <img
-        src={src}
-        onError={() => setOk(false)}
-        alt="Portrait Angga"
-        loading="lazy"
-        decoding="async"
-        className="w-full aspect-[4/5] object-cover"
-      />
-    );
-  }
-  return (
-    <div className="w-full aspect-[4/5] bg-ink/[0.045] flex items-center justify-center">
-      <p className="lbl text-ink/30">[ portrait — soon ]</p>
-    </div>
   );
 }
 
@@ -141,16 +115,8 @@ export default function About() {
           </motion.span>
         </h1>
 
-        <div className="grid md:grid-cols-12 gap-10 mt-12 md:mt-20 items-start">
-          {/* portrait — offset dari grid */}
-          <Reveal delay={0.15} className="md:col-span-5 md:col-start-1 mt-0 md:mt-24">
-            <Portrait />
-            <p className="mt-3 lbl text-[10px] text-ink/35">
-              [ fig. 01 — the one-man studio ]
-            </p>
-          </Reveal>
-
-          <div className="md:col-span-5 md:col-start-7 space-y-6 text-[16px] leading-relaxed text-ink/80">
+        <div className="mt-12 max-w-2xl md:mt-20">
+          <div className="space-y-6 text-[16px] leading-relaxed text-ink/80">
             <Reveal>
               <p>
                 <span className="text-ink">wah:anggaaa adalah taman bermain satu orang</span>{' '}
