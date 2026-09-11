@@ -57,11 +57,18 @@ Home sengaja **satu kanvas saja** (ala HUYMI) — tidak ada hero tagline,
 manifesto, say hi, atau footer di home. Kanvas = Works index + **chrome
 header ala HUYMI**:
 
-- **foto proyek: REEL VERTIKAL ala HUYMI** — foto aktif di tengah, foto
-  sebelumnya ngintip di atas & yang berikutnya di bawah (miring ±2°),
-  bergerak bersama scroll (bukan crossfade tumpuk)
+- **foto proyek: REEL VERTIKAL LOOPING ala HUYMI** — kartu portrait 5:6,
+  aktif di tengah tegak 0°, sebelumnya ngintip di atas & berikutnya di
+  bawah (miring ±5,5°, melurus saat masuk tengah), jarak antar kartu
+  0,55×tinggi stage; bergerak bersama scroll (bukan crossfade tumpuk)
+- **looping tanpa ujung**: scroll dipetakan ke indeks virtual 2 putaran
+  (0→22) dengan **jarak-modulo**, jadi …010 → 011 → 001 → 002 mulus
+  dua arah — tanpa rewind, tanpa lompatan; di luar 2 putaran pin lepas
+  natural (tidak ada jebakan scroll)
 - **list semua proyek** di kanan (kategori kecil + nama serif + blurb) —
-  item aktif menyala, yang lain memudar; list **bergulir** mengikuti scroll
+  item aktif menyala, yang lain memudar; list dirender 3 lipatan sehingga
+  ikut **looping mulus** dan tidak pernah bolong di ujung; klik item =
+  lompat lewat putaran terdekat
 - **meta** kiri tengah (role / launching / category, kolom label:value)
 - **angka raksasa** kiri bawah: `nr.` + `001` (Heros bold) + `/ 011`
 - kiri atas: teks vertikal `portfolio '26` + `11 works — jakarta, id`

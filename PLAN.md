@@ -374,3 +374,34 @@ headernya sama kayak huymi juga."
   Tailwind v4 terbukti tidak menang (di-debug via CSSOM: kedua rule match,
   `.opacity-0` tetap menang).
 - Wordmark `hidden md:block`; hamburger `left-5`; circle button dihapus.
+
+## 16. v2.8 — Kartu reel persis screenshot + looping tanpa ujung (round 11, 2026-09-12)
+
+**Briefing user (via ask_user):** 1) "label judul" = list di **kanan**
+(bukan kiri — koreksi user); 2) kartu = **portrait 5:6, tengah 0°,
+tetangga ±5,5° melurus, spacing 0,55×h, crop tengah otomatis** dari
+thumb landscape; 3) loop = **bolak-balik tanpa ujung** (001↔011);
+4) chrome lain: **skip** (tetap gaya v2.7 — angka `001 / 011`, list
+kiri-align, kotak ■ □ kanan-bawah, tanpa panah lingkaran).
+
+### Implementasi (`WorksHuy.tsx`)
+- Geometri: slot `h-[40svh] max-h-[440px] aspect-[5/6]`; `slotAt(j, f, h)`
+  menghitung **jarak-signed-modulo** `d = ((j−f+N/2) mod N) − N/2` →
+  `translateY(d × 0.55h)`, `rotate(−5.5° × clamp(d,−1,1))`,
+  `visibility |d|≤1.6`, `zIndex` aktif>tetangga (chrome diberi `z-10`
+  supaya angka NR tidak tertutup kartu — bug mobile temuan e2e).
+- Loop: ScrollTrigger scrub memetakan progress → indeks virtual
+  `f ∈ [0, 2N]` (`end = 2N×h`, 2 putaran penuh); indeks tampil
+  `round(f) mod N`. Snap manual per step 1/(2N). List = 3 lipatan WORKS,
+  `translateY = h/2 − clip − (f+N+0.5)×ITEM` (lipatan tengah = aktif).
+  `jump(i)` memilih **putaran terdekat** (min |k−f| atas k ≡ i mod N).
+  Keyboard ↑↓ = ±1 langkah; di ujung range pin lepas natural.
+- Style awal slot animasi harus **deterministik** (f0=0) — jangan
+  pakai `idx` supaya React re-render tidak menimpa transform GSAP.
+
+### Verifikasi (e2e headless Chromium, `test-reel.mjs`)
+30/30 PASS desktop 1440×900 + mobile 390×740 + reduced-motion:
+wrap f=11 identik pixel dengan f=0; f=12 lanjut 002 (no rewind);
+ArrowUp dari 001 → 011; snap f=4.37→005; klik list = jalur terdekat;
+list terisi penuh di kedua ujung; tidak ada error konsol; reduced =
+11 layar statis (121 slot) tanpa pin; mobile tanpa overflow-x.

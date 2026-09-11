@@ -1,4 +1,9 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import {
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { WORKS } from '../data/works';
@@ -9,19 +14,43 @@ gsap.registerPlugin(ScrollTrigger);
 const N = WORKS.length;
 const ITEM = 84; // tinggi item list (px) — harus sama dengan h-[84px] di markup
 
-/** tilt foto per proyek (rotasi kecil ala HUYMI) */
-const tilt = (j: number) => (j % 2 === 0 ? -2.2 : 1.8);
+/* ---------- geometri reel (diukur dari screenshot HUYMI) ---------- */
+const LOOPS = 2; // gulungan penuh 0→…→N per putaran (bolak-balik tanpa ujung)
+const TOTAL = LOOPS * N; // langkah virtual 0..TOTAL; indeks tampil = round(f) mod N
+const SPACING = 0.55; // jarak antar kartu = 0,55 × tinggi stage (screenshot ±0,55vh)
+const MAXTILT = 5.5; // derajat kemiringan kartu tetangga (tengah = 0°, melurus saat masuk)
+const PEEK = 1.6; // kartu tampil selama |jarak| ≤ PEEK
+
+/** modulo positif */
+const mod = (x: number, m: number) => ((x % m) + m) % m;
+const wrap = (x: number) => mod(x, N);
+
+/** jaraksigned terdekat kartu j dari posisi virtual f (memutar/looping) */
+const dist = (j: number, f: number) => wrap(j - f + N / 2) - N / 2;
+
+/** transform + visibilitas satu kartu reel di posisi f — deterministik per (j, h) */
+function slotAt(j: number, f: number, h: number) {
+  const d = dist(j, f);
+  const rot = -MAXTILT * Math.max(-1, Math.min(1, d));
+  return {
+    visibility: (Math.abs(d) <= PEEK ? 'visible' : 'hidden') as CSSProperties['visibility'],
+    transform: `translateY(${(d * SPACING * h).toFixed(1)}px) rotate(${rot.toFixed(2)}deg)`,
+    zIndex: 3 - Math.min(2, Math.round(Math.abs(d))),
+  };
+}
 
 /**
- * WORKS — satu layar ala HUYMI (index state):
- * paper, foto proyek di tengah (miring kecil), list semua proyek di kanan
- * (yang aktif menyala), meta kiri tengah, angka NR. raksasa kiri bawah,
- * SCROLL + dua kotak kanan bawah, panah lingkaran = proyek berikutnya.
+ * WORKS — satu layar ala HUYMI (index state, LOOPING):
+ * paper, foto proyek portrait di tengah (tegak 0°, tetangga ngintip miring
+ * ±5,5° dan melurus saat masuk tengah), list semua proyek di kanan, meta
+ * kiri tengah, angka NR. raksasa kiri bawah, SCROLL + dua kotak kanan bawah.
  *
- * Scroll VERTIKAL bergeser antar proyek: section di-pin (ScrollTrigger),
- * progress 0→1 memetakan indeks 0→10; foto crossfade + drift, list
- * bergulir, angka/meta mengikuti. Snap ke tiap proyek. Keyboard ↑↓←→ jalan
- * saat pinned. Reduced motion: 11 layar statis berurutan (tanpa pin).
+ * Scroll VERTIKAL = reel carousel TANPA UJUNG: pemetaan scroll ke indeks
+ * virtual 0→(LOOPS×N), semuanya dihitung dengan jarak-modulo — jadi
+ * …010 → 011 → 001 → 002 mulus dua arah, list kanan pun tidak pernah
+ * bolong di ujung (dirender 3 lipatan). Snap manual ke tiap proyek;
+ * keyboard ↑↓←→ saat pinned; klik list = lompat jalur terdekat.
+ * Reduced motion: 11 layar statis berurutan (tanpa pin, tanpa loop).
  */
 export default function WorksHuy() {
   const go = useGo();
@@ -30,7 +59,7 @@ export default function WorksHuy() {
   const listRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const stRef = useRef<ScrollTrigger | null>(null);
-  const fRef = useRef(0);
+  const fRef = useRef(0); // indeks virtual saat ini (0..TOTAL)
   const idxRef = useRef(0);
   const [idx, setIdx] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -46,11 +75,15 @@ export default function WorksHuy() {
   const reduced =
     typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  /** lompat ke proyek i lewat PUTARAN TERDEKAT (tidak pernah rewind jauh) */
   const jump = (i: number) => {
     const st = stRef.current;
     if (!st) return;
-    const p = Math.min(1, Math.max(0, i / (N - 1)));
-    window.scrollTo({ top: st.start + (st.end - st.start) * p, behavior: 'smooth' });
+    const v = fRef.current;
+    const cands: number[] = [];
+    for (let c = i; c <= TOTAL; c += N) cands.push(c);
+    const k = cands.reduce((a, b) => (Math.abs(b - v) < Math.abs(a - v) ? b : a), i);
+    window.scrollTo({ top: st.start + (st.end - st.start) * (k / TOTAL), behavior: 'smooth' });
   };
 
   useLayoutEffect(() => {
@@ -67,23 +100,24 @@ export default function WorksHuy() {
 
     const apply = (f: number) => {
       const h = hRef.current;
-      const spacing = h * 0.42; // jarak antar foto di reel
-      // foto: reel vertikal — aktif di tengah, tetangga ngintip atas/bawah
+      const spacing = h * SPACING;
+      // foto: reel looping — kartu di posisi JARAK TERDEKAT (modulo N)
       slotRefs.current.forEach((slot, j) => {
         if (!slot) return;
-        const d = Math.abs(f - j);
-        slot.style.visibility = d < 1.6 ? 'visible' : 'hidden';
-        slot.style.transform = `translateY(${((j - f) * spacing).toFixed(1)}px) rotate(${tilt(
-          j,
-        )}deg)`;
+        const t = slotAt(j, f, h);
+        slot.style.visibility = t.visibility;
+        slot.style.transform = t.transform;
+        slot.style.zIndex = String(t.zIndex);
       });
-      // list: item aktif selalu di tengah (dikoreksi clip atas reel)
+      // list: 3 lipatan WORKS; item aktif (lipatan tengah) selalu di tengah
       if (listRef.current) {
         listRef.current.style.transform = `translateY(${(
-          h / 2 - clipTopRef.current - (f + 0.5) * ITEM
+          h / 2 -
+          clipTopRef.current -
+          (f + N + 0.5) * ITEM
         ).toFixed(1)}px)`;
       }
-      const i = Math.min(N - 1, Math.max(0, Math.round(f)));
+      const i = wrap(Math.round(f));
       if (i !== idxRef.current) {
         idxRef.current = i;
         setIdx(i);
@@ -92,12 +126,12 @@ export default function WorksHuy() {
 
     const proxy = { f: 0 };
     const tween = gsap.to(proxy, {
-      f: N - 1,
+      f: TOTAL,
       ease: 'none',
       scrollTrigger: {
         trigger: section,
         start: 'top top',
-        end: () => `+=${(N - 1) * hRef.current}`,
+        end: () => `+=${TOTAL * hRef.current}`,
         pin: true,
         scrub: 0.6,
         anticipatePin: 1,
@@ -105,7 +139,7 @@ export default function WorksHuy() {
         // NB: ScrollTrigger `snap` bawaan tidak stabil di setup ini (meleset
         // beberapa langkah) → snap manual via listener scroll-idle di bawah.
         onUpdate: (self) => {
-          fRef.current = self.progress * (N - 1);
+          fRef.current = self.progress * TOTAL;
           apply(fRef.current);
         },
       },
@@ -116,7 +150,7 @@ export default function WorksHuy() {
     const onKey = (e: KeyboardEvent) => {
       const st = stRef.current;
       if (!st || !st.isActive) return;
-      const step = 1 / (N - 1);
+      const step = 1 / TOTAL;
       const cur = Math.round(st.progress / step) * step;
       let target: number | null = null;
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown')
@@ -142,7 +176,7 @@ export default function WorksHuy() {
       idleTimer = window.setTimeout(() => {
         const st = stRef.current;
         if (!st || !st.isActive) return;
-        const step = 1 / (N - 1);
+        const step = 1 / TOTAL;
         const nearest = Math.min(1, Math.max(0, Math.round(st.progress / step) * step));
         if (Math.abs(nearest - st.progress) > 0.002) {
           window.scrollTo({
@@ -168,8 +202,19 @@ export default function WorksHuy() {
   /* ---------- layout satu layar (dipakai mode normal & reduced) ---------- */
   const renderStage = (i: number, animated: boolean) => {
     const wk = WORKS[i];
+    const hNow = typeof window !== 'undefined' ? window.innerHeight : 900;
+    // animated: style awal HARUS konstan antar render (jangan pakai `i` —
+    // GSAP yang pegang kendali sesudahnya; string berubah = React menimpa
+    // transform di tengah scrub). f0 = 0 untuk semua render animated.
+    const f0 = animated ? 0 : i;
+    // list mode statis: titik tengah lipatan ke-2
+    const listStaticY = (
+      hRef.current / 2 -
+      (typeof window !== 'undefined' && window.innerWidth >= 768 ? 72 : 0) -
+      (i + N + 0.5) * ITEM
+    ).toFixed(0);
     return (
-      <div className={`relative h-svh overflow-hidden ${animated ? '' : ''}`}>
+      <div className="relative h-svh overflow-hidden">
         {/* kiri atas: teks vertikal */}
         <div className="absolute left-4 top-20 hidden flex-col items-center gap-3 sm:flex md:left-7 md:top-24">
           <span className="lbl text-ink/60" style={{ writingMode: 'vertical-rl' }}>
@@ -236,49 +281,44 @@ export default function WorksHuy() {
           <p className="lbl mt-0.5 text-ink/45">working from jakarta</p>
         </div>
 
-        {/* foto: REEL VERTIKAL ala HUYMI — foto aktif di tengah, yang
-            sebelumnya ngintip di atas, yang berikutnya di bawah (miring) */}
+        {/* foto: REEL VERTIKAL LOOPING ala HUYMI — kartu portrait 5:6, aktif
+            di tengah tegak 0°, tetangga ngintip miring ±5,5° (melurus saat
+            masuk tengah), jarak antar kartu 0,55×tinggi stage; 011 → 001 mulus */}
         <div className="pointer-events-none absolute inset-0">
-          {WORKS.map((im, j) => (
-            <div
-              key={im.index}
-              ref={
-                animated
-                  ? (el) => {
-                      slotRefs.current[j] = el;
-                    }
-                  : undefined
-              }
-              className="absolute inset-0 m-auto h-[36svh] max-h-[430px] aspect-[5/4] max-w-[80vw]"
-              style={
-                animated
-                  ? { visibility: j === 0 ? 'visible' : 'hidden', transform: `rotate(${tilt(0)}deg)` }
-                  : {
-                      visibility: Math.abs(j - i) < 1.6 ? 'visible' : 'hidden',
-                      transform: `translateY(${((j - i) * 0.42 * (typeof window !== 'undefined' ? window.innerHeight : 900)).toFixed(
-                        0,
-                      )}px) rotate(${tilt(j)}deg)`,
-                    }
-              }
-            >
-              <span
-                aria-hidden
-                className="absolute inset-0 bg-cover bg-center"
-                style={{ backgroundImage: `url(${im.blur})` }}
-              />
-              <img
-                src={im.thumb}
-                alt={im.title}
-                loading={j < 3 ? 'eager' : 'lazy'}
-                decoding="async"
-                className="absolute inset-0 h-full w-full object-cover shadow-[0_24px_60px_-28px_rgba(13,13,12,0.4)]"
-              />
-            </div>
-          ))}
+          {WORKS.map((im, j) => {
+            const t = slotAt(j, f0, hNow);
+            return (
+              <div
+                key={im.index}
+                ref={
+                  animated
+                    ? (el) => {
+                        slotRefs.current[j] = el;
+                      }
+                    : undefined
+                }
+                className="absolute inset-0 m-auto h-[40svh] max-h-[440px] aspect-[5/6] max-w-[80vw]"
+                style={t}
+              >
+                <span
+                  aria-hidden
+                  className="absolute inset-0 bg-cover bg-center"
+                  style={{ backgroundImage: `url(${im.blur})` }}
+                />
+                <img
+                  src={im.thumb}
+                  alt={im.title}
+                  loading={j < 3 ? 'eager' : 'lazy'}
+                  decoding="async"
+                  className="absolute inset-0 h-full w-full object-cover shadow-[0_24px_60px_-28px_rgba(13,13,12,0.4)]"
+                />
+              </div>
+            );
+          })}
         </div>
 
         {/* link di bawah foto aktif */}
-        <div className="absolute top-[calc(50%+20svh)] left-1/2 flex -translate-x-1/2 items-center gap-5">
+        <div className="absolute top-[calc(50%+21svh)] left-1/2 z-10 flex -translate-x-1/2 items-center gap-5">
           <button
             onClick={() => go(`/works/${wk.slug}`)}
             className="lbl cursor-pointer whitespace-nowrap text-ink transition-opacity hover:opacity-60"
@@ -295,53 +335,52 @@ export default function WorksHuy() {
           </a>
         </div>
 
-        {/* list proyek di kanan (reel) — atasnya di-clip di bawah chrome
-            agar item yang bergulir tidak menabrak teks kanan-atas */}
-        <div className="absolute right-4 bottom-0 hidden top-0 w-[46vw] max-w-[320px] overflow-hidden sm:block md:top-[4.5rem] md:right-10">
+        {/* list proyek di kanan (reel LOOPING) — 3 lipatan WORKS agar item
+            tidak pernah bolong saat wrap; atasnya di-clip di bawah chrome.
+            Klik = lompat ke putaran terdekat. */}
+        <div className="absolute right-4 bottom-0 z-10 hidden top-0 w-[46vw] max-w-[320px] overflow-hidden sm:block md:top-[4.5rem] md:right-10">
           <div
             ref={animated ? listRef : undefined}
             className="absolute inset-x-0 top-0"
             // mode animated: transform sepenuhnya milik GSAP (jangan style prop
             // yang ikut re-render → bakal menimpa animasi di tengah scrub)
-            style={
-              animated
-                ? undefined
-                : {
-                    transform: `translateY(${(
-                      hRef.current / 2 -
-                      (typeof window !== 'undefined' && window.innerWidth >= 768 ? 72 : 0) -
-                      (i + 0.5) * ITEM
-                    ).toFixed(0)}px)`,
-                  }
-            }
+            style={animated ? undefined : { transform: `translateY(${listStaticY}px)` }}
           >
-            {WORKS.map((im, j) => (
-              <button
-                key={im.index}
-                onClick={() => jump(j)}
-                className={`block h-[84px] w-full cursor-pointer overflow-hidden text-left ${
-                  j === i ? 'opacity-100' : 'opacity-100'
-                }`}
-                aria-label={`${im.title} — proyek ${im.index}`}
-              >
-                <p className={`lbl ${j === i ? 'text-ink' : 'text-ink/35'}`}>{im.category}</p>
-                <p
-                  className={`mt-0.5 font-serif text-[clamp(1.15rem,2.1vw,1.55rem)] leading-tight ${
-                    j === i ? 'text-ink' : 'text-ink/40'
-                  }`}
-                >
-                  {im.title}
-                </p>
-                <p className={`mt-1 text-[10px] leading-[1.3] ${j === i ? 'text-ink/70' : 'text-ink/30'}`}>
-                  {im.blurb}
-                </p>
-              </button>
-            ))}
+            {[0, 1, 2].map((copy) =>
+              WORKS.map((im, jj) => {
+                const j = copy * N + jj;
+                const active = jj === i;
+                return (
+                  <button
+                    key={`${copy}-${im.index}`}
+                    onClick={() => jump(jj)}
+                    className={`block h-[84px] w-full cursor-pointer overflow-hidden text-left opacity-100`}
+                    aria-label={`${im.title} — proyek ${im.index}`}
+                  >
+                    <p className={`lbl ${active ? 'text-ink' : 'text-ink/35'}`}>{im.category}</p>
+                    <p
+                      className={`mt-0.5 font-serif text-[clamp(1.15rem,2.1vw,1.55rem)] leading-tight ${
+                        active ? 'text-ink' : 'text-ink/40'
+                      }`}
+                    >
+                      {im.title}
+                    </p>
+                    <p
+                      className={`mt-1 text-[10px] leading-[1.3] ${
+                        active ? 'text-ink/70' : 'text-ink/30'
+                      }`}
+                    >
+                      {im.blurb}
+                    </p>
+                  </button>
+                );
+              }),
+            )}
           </div>
         </div>
 
         {/* meta kiri tengah */}
-        <div className="absolute top-[42%] left-4 hidden space-y-1.5 md:left-10 md:block">
+        <div className="absolute top-[42%] left-4 z-10 hidden space-y-1.5 md:left-10 md:block">
           {(
             [
               ['role', wk.role],
@@ -357,7 +396,7 @@ export default function WorksHuy() {
         </div>
 
         {/* angka NR. raksasa */}
-        <div className="absolute bottom-8 left-4 md:bottom-10 md:left-10">
+        <div className="absolute bottom-8 left-4 z-10 md:bottom-10 md:left-10">
           <p className="lbl mb-1 text-ink/50">nr.</p>
           <p className="flex items-start leading-none">
             <span className="font-display text-[clamp(4.5rem,10vw,8.5rem)] font-bold tracking-[-0.02em]">
@@ -368,8 +407,8 @@ export default function WorksHuy() {
         </div>
 
         {/* scroll hint + dua kotak */}
-        <p className="absolute bottom-2 left-4 hidden lbl text-ink/40 md:left-10 md:block">scroll ↓</p>
-        <div className="absolute right-4 bottom-9 flex items-center gap-1.5 md:right-10">
+        <p className="absolute bottom-2 left-4 z-10 hidden lbl text-ink/40 md:left-10 md:block">scroll ↓</p>
+        <div className="absolute right-4 bottom-9 z-10 flex items-center gap-1.5 md:right-10">
           <span className="h-2.5 w-2.5 bg-ink" />
           <span className="h-2.5 w-2.5 bg-ink/25" />
         </div>
@@ -435,7 +474,7 @@ export default function WorksHuy() {
 
   /* ---------- mode normal: satu layar, scroll = gonta-ganti proyek ---------- */
   return (
-    <section ref={sectionRef} className="relative" aria-label="Selected works — scroll untuk ganti proyek">
+    <section ref={sectionRef} className="relative" aria-label="Selected works — scroll untuk ganti proyek (tanpa ujung)">
       <div ref={stageRef}>{renderStage(idx, true)}</div>
       {menuOverlay}
     </section>
