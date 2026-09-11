@@ -5,11 +5,11 @@ tipografis, dan editorial**. Isinya 11 karya fiktif: "taman bermain satu orang":
 brand khayalan yang digarap serius. Identitas visual v2.3: paper `#EAE8E1` +
 ink `#0D0D0C`, **2 font saja** — display condensed raksasa (Heros Cn) + serif aksen
 (Junicode Cn) — **tanpa garis di mana pun**, gambar berwarna penuh, hero poster 3
-treatment, dan signature **WORKS DECK**: carousel full-bleed ala HUYMI — 11 slide
-foto karya raksasa yang di-*pin* dan bergeser horizontal mengikuti scroll vertikal,
-judul serif raksasa di bawah tengah, prev/next di pojok, counter indeks raksasa,
-teks putih *mix-blend-difference* (auto-invert di atas foto apa pun). Intro: tagline
-scramble-decode. Dibangun sebagai static SPA yang jalan identik di GitHub Pages
+treatment, dan signature **WORKS — index ala HUYMI**: satu layar paper dengan
+foto proyek di tengah (miring kecil), list semua proyek di kanan (aktif
+menyala), meta kiri, angka `NR. 001 / 011` raksasa kiri bawah — **scroll
+vertikal bergeser antar proyek** (foto crossfade + drift, list bergulir,
+snap ke tiap proyek). Intro: tagline scramble-decode. Dibangun sebagai static SPA yang jalan identik di GitHub Pages
 maupun Vercel dari codebase yang sama.
 
 > Status: iseng-iseng, just for fun. Bukan situs open-for-work.
@@ -57,19 +57,23 @@ zero invoices
    ZERO INVOICES.`) dengan reveal line-mask, role serif italic
    `Designer & Creative Developer`, label `[ just for fun ]` `[ jakarta — wib ]`,
    CTA `say hi ↗` + `[ about ]`.
-2. **Selected Works — WORKS DECK (signature)** — carousel pinned ala HUYMI:
-   section 100svh di-*pin* (GSAP ScrollTrigger), scroll vertikal → track
-   horizontal (scrub 1). Tiap slide: **foto karya full-bleed warna asli** + dim
-   flat ink 30% + semua overlay teks putih **mix-blend-difference** (auto-invert,
-   terbaca di foto terang & gelap):
-   - kiri bawah: **counter raksasa** `001 / 011` + `scroll →`
-   - tengah bawah: **judul serif raksasa** (Junicode) + kategori + `view case study →`
-   - pojok kiri/kanan: `← prev` / `next →` dengan nama karya di sebelahnya
-   - kiri atas: `case 001 — '26`, role · stack, `live website →`
-   - kanan atas: `[ just for fun ] · working from jakarta`
-   - tengah atas: 11 tick progress
-   Navigasi: scroll, tombol prev/next, keyboard ← → saat pinned.
-   Klik judul = buka case study. Reduced motion: horizontal scroll-snap tanpa pin.
+2. **Selected Works — index ala HUYMI (signature)** — satu layar 100svh
+   (persis layout reference HUYMI), **scroll vertikal = gonta-ganti proyek**:
+   - **foto proyek** di tengah, miring ±2°, **crossfade + drift vertikal**
+     antar proyek (warna asli penuh)
+   - **list semua proyek** di kanan (kategori kecil + nama serif + blurb) —
+     item aktif menyala, yang lain memudar; list **bergulir** mengikuti scroll
+   - **meta** kiri tengah (role / launching / category, kolom label:value)
+   - **angka raksasa** kiri bawah: `nr.` + `001` (Heros bold) + `/ 011`
+   - kiri atas: teks vertikal `portfolio '26` + `11 works — jakarta, id`
+   - kanan atas: `[ just for fun ] / working from jakarta`
+   - kiri bawah: `scroll ↓`; kanan bawah: dua kotak ■ □
+   - **panah lingkaran** = proyek berikutnya; klik list = lompat proyek;
+     keyboard ↑↓←→ saat pinned
+   - di bawah foto: `case study →` (buka case) + `live website ↗`
+   Implementasi: section di-*pin* (ScrollTrigger, `scrub 0.6`, proxy object),
+   **snap manual** saat scroll idle ±160ms (snap bawaan GSAP tidak stabil di
+   setup ini). Reduced motion: 11 layar statis berurutan, tanpa pin.
 3. **Manifesto** — kalimat besar serif italic, opacity **kata-per-kata mengikuti
    scroll** (scrub rAF, mutasi DOM langsung).
 4. **Say Hi** — link raksasa full-width, hover shift → `/contact`.
@@ -130,20 +134,25 @@ frontmatter = langsung terbit.
 Semua animasi memakai properti murah-GPU (**transform & opacity saja**), dengan
 fallback `prefers-reduced-motion` di setiap bagian.
 
-### 1. Works Deck — carousel pinned (`src/components/WorksDeck.tsx`)
+### 1. Works — index ala HUYMI (`src/components/WorksHuy.tsx`)
 
-- Section 100svh di-**pin** ScrollTrigger (`start: top top`, `end: +=(N-1)×vw`,
-  `scrub: 1`); track `<div flex>` di-translate-x `0 → -(N-1)×innerWidth`.
-- 11 slide `w-screen`: img `object-cover` full-bleed (blur-up placeholder),
-  dim flat `bg-ink/30` (bukan gradient), overlay teks putih `mix-blend-difference`.
-- Tombol prev/next & keyboard ← → = `window.scrollTo` ke posisi pin yang
-  dihitung dari indeks (bukan mutasi tween) → sinkron sempurna dengan scrub.
-- Setup/cleanup di **`useLayoutEffect`**: ScrollTrigger pin mem-wrap section
-  dengan `pin-spacer`; kalau trigger di-kill lewat effect pasif (terlambat),
-  React gagal `removeChild` saat unmount.
-- Reduced motion: tanpa pin — wrapper `overflow-x-auto snap-x`, slide `snap-start`.
-- `onUpdate` hanya menulis `activeRef` (untuk keyboard) — slide menampilkan
-  counter/tick statisnya sendiri, nol re-render per frame.
+- Section 100svh di-**pin** ScrollTrigger (`start: top top`,
+  `end: +=(N-1)×viewHeight`, `scrub: 0.6`); tween target = **proxy object**
+  `{ f: 0 → N-1 }` — `onUpdate` mengubah gaya DOM langsung (transform
+  crossfade foto, translateY list, state React hanya untuk angka/meta/list
+  aktif saat `round(f)` berganti).
+- **Foto**: 11 `<img>` ditumpuk di tengah; per frame `opacity = 1-|f-j|`,
+  `y = -d×120px`, `rotate ±2°` (tilt bergantian), scale halus → crossfade +
+  drift ala HUYMI.
+- **List reel**: item aktif selalu di tengah (`translateY = h/2 - (f+0.5)×ITEM`);
+  **transform list milik GSAP** — tanpa style prop React (re-render React
+  bakal menimpa animasi di tengah scrub).
+- **Snap manual**: scroll idle ±160ms → `scrollTo smooth` ke langkah terdekat.
+  (ScrollTrigger `snap` bawaan di-kill: meleset beberapa langkah di setup ini.)
+- Tombol panah, klik list, keyboard = `scrollTo` ke posisi pin per indeks.
+- Setup/cleanup di **`useLayoutEffect`** (ScrollTrigger pin mem-wrap section
+  dengan `pin-spacer`; kill lewat effect pasif → React gagal `removeChild`).
+- Reduced motion: 11 layar statis berurutan (tanpa pin/tween).
 
 ### 2. Intro scramble (`src/components/Intro.tsx`)
 
@@ -207,10 +216,10 @@ drag-rail), Inspirux (drift), Onoera (ritme intro).
     │   ├── Intro.tsx        → intro terminal scramble + tirai
     │   ├── Header.tsx       → header tipis (tanpa border; bg paper saat scroll)
     │   ├── Footer.tsx       → footer raksasa cascade + wave + jam + status studio
-    │   ├── WorksDeck.tsx    → works deck: carousel full-bleed pinned (signature)
+    │   ├── WorksHuy.tsx     → works index ala HUYMI: satu layar, scroll = ganti proyek
     │   └── Seo.tsx          → title/desc/OG kanonis + JSON-LD per route
     ├── routes/
-    │   ├── Home.tsx         → hero + works deck + manifesto + say hi
+    │   ├── Home.tsx         → hero + works index (HUYMI) + manifesto + say hi
     │   ├── About.tsx        → portrait + bio + capabilities + recognition + colophon
     │   ├── Contact.tsx      → say hi + email + sosial + generator brand
     │   ├── WorkCase.tsx     → case study per karya (/works/:slug)

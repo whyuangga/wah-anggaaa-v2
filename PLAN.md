@@ -296,3 +296,30 @@ raksasa); (3) v2.2 "masih mirip banget" → deck menggantikan The Index.
   removeChild di commit) → kalau pakai `useEffect` muncul
   `NotFoundError: removeChild` saat pindah halaman.
 - Reduced motion: horizontal scroll-snap, tanpa pin.
+
+## 12. v2.4 — Works index ala HUYMI (round 7, 2026-09-11)
+
+**Keputusan user:** foto reference sebelumnya salah kirim — yang benar state
+"index" HUYMI (paper, foto tengah miring, list proyek kanan, angka raksasa).
+"Jadi cuma hero section aja tanpa section, jadi scroll nya buat gonta-ganti
+proyeknya." → deck horizontal full-bleed dihapus; works jadi **satu layar**
+layout persis reference, scroll vertikal = ganti proyek. Konten = 11 karya kita.
+
+### Layout (patokan screenshot HUYMI)
+- Kiri atas: teks vertikal `portfolio '26` + `11 works — jakarta, id`
+- Kanan atas: `[ just for fun ] / working from jakarta`
+- Tengah: foto proyek (miring ±2°, shadow halus), crossfade + drift antar proyek
+- Kanan: reel 11 proyek (kategori + nama serif + blurb), aktif menyala, gulir
+- Kiri tengah: meta role/launching/category (kolom label:value)
+- Kiri bawah: `nr.` + angka Heros raksasa + `/ 011`; `scroll ↓`
+- Kanan bawah: dua kotak ■ □; panah lingkaran = proyek berikutnya
+- Bawah foto: `case study →` + `live website ↗`
+
+### Teknis & pitfall
+- Proxy tween `{f: 0→N-1}` + `scrub 0.6` + pin; DOM dimutasi langsung per frame.
+- **Snap bawaan GSAP tidak stabil** (meleset 2-6 langkah; reproducible headless)
+  → snap manual: scroll idle 160ms → `scrollTo smooth` ke langkah terdekat.
+- **List tanpa style prop di mode animated** — style transform yang bergantung
+  `idx` akan di-rewrite React tiap re-render dan menimpa animasi GSAP.
+- Foto: 11 img ditumpuk; `opacity = 1-|f-j|`, `y = -d×120`, `rotate ±2°`.
+- Reduced motion: 11 layar statis (tanpa pin).
