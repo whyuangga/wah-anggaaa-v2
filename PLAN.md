@@ -472,3 +472,37 @@ auto-recenter di batas (y=19800→9900); wheel-down di dasar menembus;
 ArrowDown di ujung lanjut ke 002; about tanpa portrait; hamburger+overlay
 di /about mobile; regresi loop/snap/jump/fling/reduced/mobile semua tetap
 hijau. tsc + build bersih.
+
+
+## 19. v2.11 — Looping mobile: touchend recenter + wheel dua sisi (2026-09-12)
+
+**Masalah user:** di mobile swipe ke bawah masih mentok dan ke atas tidak
+bisa — loop baru jalan di desktop (wheel).
+
+**Akar masalah:**
+1. Guard `y > lastY` pada recenter-saat-scroll gagal di mobile: saat swipe
+   mencapai clamp, event terakhir mendarat persis `y == lastY == end`
+   → syarat strict-`>` tidak pernah true.
+2. Di TENGAH gesture touch, `window.scrollTo` percuma — browser menyimpan
+   anchor posisi saat touchstart dan memaksanya kembali (clamp) di setiap
+   touchMove. Scroll tidak pernah bisa "dipindah" sebelum gesture selesai.
+3. Scroll-ke-atas di y=0 tidak pernah fires scroll event (native clamp) —
+   jadi sisi atas tak punya jalur wrap sama sekali (desktop pun begitu).
+
+**Implementasi (`WorksHuy.tsx`):**
+- Listener `scroll`: recenter batas bawah TANPA syarat arah; batas atas
+  recenter bila tiba dengan arah naik (y < lastY).
+- Listener `wheel`: dua sisi — di dasar lanjut +delta, di pucuk (deltaY<0,
+  y≤start+1.5) preventDefault + `start + loopPx + delta` → scroll-up dari
+  001 tembus ke 011 (sebelumnya mustahil).
+- `touchstart`/`touchend` (passive, tanpa preventDefault): touchend mengukur
+  arah gesture dari ΔY jari; di batas & mengarah keluar → geser 1 putaran.
+  Momentum pasca-fling dinetralkan snap-idle + guard unconditional.
+- `html { overscroll-behavior-y: none }` → pull-to-refresh/glow tidak
+  mencuri swipe di batas.
+
+**Verifikasi:** e2e pakai CDP `Input.dispatchTouchEvent` (swipe nyata,
+context `hasTouch`, 390×740): swipe-up di dekat end tidak mentok & proyek
+berubah; 8× swipe berturut selalu di-wrap 0× nyangkut; swipe-down di pucuk
+menembus (y ≈ loopPx) lalu swipe-up lanjut → proyek 11; desktop wheel-up di
+pucuk → y=9900. Suite penuh 44/44 PASS; tsc + build bersih.

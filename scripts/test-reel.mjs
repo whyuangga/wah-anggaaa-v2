@@ -142,6 +142,14 @@ await page.goBack({ waitUntil: 'networkidle' }).catch(() => {});
 await page.waitForSelector('section[aria-label^="Selected works"]', { timeout: 20000 });
 await page.waitForTimeout(2600); // fling ulang di home → tunggu settle penuh
 
+// ---- 4c. desktop: wheel-UP di pucuk (y=0) harus menembus ke 011 ----
+await scrollToF(0);
+await page.waitForTimeout(1100);
+await page.mouse.wheel(0, -140);
+await page.waitForTimeout(400);
+const topWheel = await page.evaluate(() => window.scrollY);
+ok('wheel-up di pucuk menembus loop (naik satu putaran)', topWheel > geo.h * (N - 1.5), `y=${topWheel.toFixed(0)}`);
+
 // ---- 5. ujung + error ----
 await scrollToF(TOTAL);
 s = await state();
@@ -281,6 +289,78 @@ await page.close();
     await a.screenshot({ path: SHOTS + '/11-mobile-menu-about.png' });
   }
   await a.close();
+}
+
+/* ================= MOBILE TOUCH — swipe sejati (CDP) ================= */
+{
+  const ctx = await browser.newContext({ viewport: { width: MOBILE_W, height: MOBILE_H }, hasTouch: true });
+  const tpage = await ctx.newPage();
+  const terrs = [];
+  tpage.on('pageerror', (e) => terrs.push(String(e)));
+  await tpage.goto(URL, { waitUntil: 'networkidle' });
+  await tpage.waitForTimeout(5200);
+  const tg = await tpage.evaluate(() => {
+    const sec = document.querySelector('section[aria-label^="Selected works"]');
+    const r = sec.getBoundingClientRect();
+    return { top: scrollY + r.top, h: sec.querySelector(':scope > div').clientHeight };
+  });
+  const TY = (f) => tg.top + f * tg.h;
+  const cdp = await ctx.newCDPSession(tpage);
+  const swipe = async (fromY, toY, steps = 10, x = 195) => {
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y: fromY }] });
+    for (let i = 1; i <= steps; i++) {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: fromY + ((toY - fromY) * i) / steps }] });
+      await new Promise((r) => setTimeout(r, 18));
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await new Promise((r) => setTimeout(r, 700));
+  };
+  const getNo = () =>
+    tpage.evaluate(() => {
+      const el = [...document.querySelectorAll('p')].find((p) => p.textContent.trim() === 'nr.');
+      return {
+        no: el?.nextElementSibling?.querySelector('span')?.textContent?.trim(),
+        y: window.scrollY,
+      };
+    });
+
+  // (a) swipe UP (jari naik = scroll ke bawah) berulang dari dekat batas bawah → jangan mentok
+  await tpage.evaluate((y) => window.scrollTo(0, y), TY(TOTAL - 1.2));
+  await tpage.waitForTimeout(250);
+  let before = await getNo();
+  await swipe(600, 240); // 360px naik → snap mundur? (kurang dari 1 langkah) → pakai swipe panjang
+  await swipe(600, -380); // 980px ≈ > 1 langkah → maju
+  let after = await getNo();
+  ok('touch: swipe-up dekat batas bawah TIDAK mentok (posisi < end)', after.y < TY(TOTAL) - 5, `y=${(after.y - tg.top).toFixed(0)} vs end=${(TY(TOTAL) - tg.top).toFixed(0)}`);
+  ok('touch: swipe-up lanjut muter (proyek berubah)', before.no !== after.no, `${before.no} → ${after.no}`);
+
+  // (b) 8 swipe panjang terus-menerus ke bawah: tidak pernah nyangkut di end
+  let stuck = false;
+  for (let i = 0; i < 8; i++) {
+    await tpage.evaluate((y) => window.scrollTo(0, y), TY(TOTAL - 0.3));
+    await tpage.waitForTimeout(120);
+    await swipe(650, -350);
+    const st = await tpage.evaluate(() => window.scrollY);
+    if (st >= TY(TOTAL) - 1) stuck = true;
+  }
+  ok('touch: 8× swipe ke batas bawah selalu di-wrap (0× nyangkut)', !stuck);
+
+  // (c) swipe DOWN di pucuk (scroll ke atas dari 001) → tembus ke 011
+  await tpage.evaluate(() => window.scrollTo(0, 0));
+  await tpage.waitForTimeout(300);
+  await swipe(240, 700); // 460px turun → touchend di y<=start → maju 1 putaran
+  let topState = await getNo();
+  const landedWrap = topState.y > tg.h * (N - 1.5) && topState.y < tg.h * (N + 1.5);
+  ok('touch: swipe-down di pucuk menembus loop (naik ke 011)', landedWrap, `y=${(topState.y - tg.top).toFixed(0)} ≈ ${N * tg.h}`);
+  // lanjutkan swipe ke ARAH ATAS reel (jari turun = scroll naik) → 001 → 011
+  await tpage.evaluate((y) => window.scrollTo(0, y), TY(N - 0.05)); // settle di 001 hasil wrap
+  await tpage.waitForTimeout(400);
+  await swipe(240, 700); // jari turun 460px → f turun ~0.6 langkah → snap ke 10 → 011
+  topState = await getNo();
+  ok('touch: dari 001 lanjut swipe-up → proyek 11', topState.no === '11', `${topState.no} @y=${(topState.y - tg.top).toFixed(0)}`);
+  await tpage.screenshot({ path: SHOTS + '/12-mobile-touch.png' });
+  ok('touch: tanpa page error', terrs.length === 0, terrs.join(' | '));
+  await ctx.close();
 }
 
 /* ================= REDUCED MOTION ================= */

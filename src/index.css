@@ -47,6 +47,9 @@
 
 html {
   background: var(--color-paper);
+  /* reel home looping di kedua batas — jangan biarkan browser mencuri
+     gesture untuk pull-to-refresh / overscroll glow */
+  overscroll-behavior-y: none;
 }
 
 body {

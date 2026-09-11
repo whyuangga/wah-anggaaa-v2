@@ -201,38 +201,77 @@ export default function WorksHuy() {
     window.addEventListener('keydown', onKey);
     window.addEventListener('resize', onResize);
 
-    // LOOP TANPA UJUNG: saat scroll menyenggol batas bawah, posisi digeser
-    // persis SATU putaran penuh (N langkah). Render di f dan f−N IDENTIK
-    // (semua posisi berbasis modulo; list 4 lipatan) → pemindahan tak bisa
-    // terlihat; lanjut scroll terus = muter terus. st.start = 0 di home
-    // (kanvas = seluruh halaman), jadi batas atas tidak perlu di-wrap —
-    // dari 001 naik lagi ya emang halaman mulai.
+    // LOOP TANPA UJUNG, dua arah (desktop + mobile):
+    // Render di f dan f±N IDENTIK (semua posisi berbasis modulo; list
+    // 4 lipatan) → tiap kali menempel batas, posisi digeser persis SATU
+    // putaran penuh; pemindahan tak bisa terlihat. Tiga jalur recenter:
+    //  a) `scroll` — dasar: unconditional (mobile clamp membuat y == lastY,
+    //     guard "arah" versi lama tidak pernah true → itu bug mentok);
+    //     puncak: saat tiba dengan scroll MENURUN → maju satu putaran
+    //     (scroll-up di y=0 tak mungkin fire event, jadi pakai jalur b/c).
+    //  b) `wheel` — di batas, preventDefault + posisi = (batas −/+ loopPx)
+    //     + delta ter-clamp; ini yang bikin trackpad/mouse tidak nyangkut,
+    //     dan membuat scroll-ATAS dari 001 tembus ke 011.
+    //  c) `touchend` — gesture touch tidak bisa di-recenter di tengah
+    //     (anchor browser meng-klamp balik), jadi begitu jari angkat:
+    //     kalau posisi di batas DAN arah gesek mau keluar → geser 1 putaran.
+    // Momentum/fling pasca-touchend ikut di-normalize listener snap idle.
     let lastY = window.scrollY;
-    const onScrollWrap = () => {
+    const edge = () => {
       const st = stRef.current;
+      if (!st || flingingRef.current) return null;
+      return { st, loopPx: (st.end - st.start) / LOOPS };
+    };
+    const onScrollWrap = () => {
+      const e = edge();
       const y = window.scrollY;
-      if (st && !flingingRef.current && y > lastY && y >= st.end - 0.5) {
-        window.scrollTo(0, y - (st.end - st.start) / LOOPS);
+      if (e) {
+        if (y >= e.st.end - 0.5) {
+          window.scrollTo(0, y - e.loopPx);
+        } else if (y <= e.st.start + 0.5 && y < lastY) {
+          window.scrollTo(0, y + e.loopPx);
+        }
       }
       lastY = y;
     };
     window.addEventListener('scroll', onScrollWrap, { passive: true });
 
-    // di dasar halaman scroll-event tidak fires lagi (sudah mentok native) →
-    // wheel-down di-cegah lalu dipindah satu putaran + delta-nya, jadi kursor
-    // trackpad/mouse tidak "nyangkut" sedetik pun di ujung
     const onWheel = (e: WheelEvent) => {
-      const st = stRef.current;
-      if (!st || !st.isActive || flingingRef.current || e.deltaY <= 0) return;
-      if (window.scrollY >= st.end - 1.5) {
+      const ed = edge();
+      if (!ed || !ed.st.isActive) return;
+      const d = Math.max(-hRef.current * 0.8, Math.min(e.deltaY, hRef.current * 0.8));
+      if (!d) return;
+      const y = window.scrollY;
+      if (d > 0 && y >= ed.st.end - 1.5) {
         e.preventDefault();
-        window.scrollTo(
-          0,
-          st.end - (st.end - st.start) / LOOPS + Math.min(e.deltaY, hRef.current * 0.8),
-        );
+        window.scrollTo(0, ed.st.end - ed.loopPx + d);
+      } else if (d < 0 && y <= ed.st.start + 1.5) {
+        e.preventDefault();
+        window.scrollTo(0, ed.st.start + ed.loopPx + d);
       }
     };
     window.addEventListener('wheel', onWheel, { passive: false });
+
+    let touchAnchor: { y: number } | null = null;
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) touchAnchor = { y: e.touches[0].clientY };
+    };
+    const onTouchEnd = (e: TouchEvent) => {
+      const ed = edge();
+      const a = touchAnchor;
+      touchAnchor = null;
+      if (!ed || !a) return;
+      const endY = e.changedTouches[0]?.clientY ?? a.y;
+      const dy = a.y - endY; // >0: jari naik = lanjut ke bawah; <0: sebaliknya
+      const y = window.scrollY;
+      if (y >= ed.st.end - 1.5 && dy > 0) {
+        window.scrollTo(0, y - ed.loopPx);
+      } else if (y <= ed.st.start + 1.5 && dy < 0) {
+        window.scrollTo(0, y + ed.loopPx);
+      }
+    };
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
 
     // snap manual: scroll berhenti ±160ms → geser halus ke langkah terdekat
     let idleTimer: number | undefined;
@@ -258,6 +297,10 @@ export default function WorksHuy() {
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('resize', onResize);
       window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('scroll', onScrollWrap);
+      window.removeEventListener('wheel', onWheel);
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchend', onTouchEnd);
       tween.scrollTrigger?.kill();
       tween.kill();
       fling.kill();

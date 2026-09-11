@@ -65,11 +65,16 @@ header ala HUYMI**:
   aktif di tengah tegak 0°, sebelumnya ngintip di atas & berikutnya di
   bawah (miring ±5,5°, melurus saat masuk tengah), jarak antar kartu
   0,55×tinggi stage; bergerak bersama scroll (bukan crossfade tumpuk)
-- **looping tanpa ujung yang SESUNGGUHNYA tanpa ujung**: scroll dipetakan
-  ke indeks virtual 2 putaran (0→22) dengan **jarak-modulo** — …010 →
-  011 → 001 → 002 mulus dua arah; saat menyenggol batas bawah, posisi
-  digeser persis satu putaran (frame-nya identik → tak terlihat), jadi
-  wheel/scroll/keyboard **tidak pernah mentok** dan pin tidak pernah lepas
+- **looping tanpa ujung yang SESUNGGUHNYA tanpa ujung (desktop & touch)**:
+  scroll dipetakan ke indeks virtual 2 putaran (0→22) dengan **jarak-modulo**
+  — …010 → 011 → 001 → 002 mulus dua arah; menyenggol batas mana pun
+  menggeser posisi persis satu putaran (frame identik → tak terlihat) via
+  tiga jalur: listener `scroll` (recenter unconditional di dasar),
+  `wheel` (cegat + reposition, dua sisi), dan `touchend` (arah-aware —
+  karena browser meng-klamp scroll anchor di TENGAH gesture, recenter di
+  tengah swipe tidak mungkin; dilakukan saat jari angkat). Pin tidak
+  pernah lepas; `overscroll-behavior-y: none` mencegah pull-to-refresh
+  mencuri gesture di batas
 - **klik kartu aktif → case study** (overlay button di slot tengah;
   `pointer-events-auto` wajib karena container reel `pointer-events-none`)
 - **list semua proyek** di kanan (kategori kecil + nama serif + blurb) —
