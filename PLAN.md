@@ -1,5 +1,15 @@
 # wah:anggaaa — Redesign v2.1 · Light Editorial
 
+> ## 🚨 ATURAN KERAS untuk AI/agen (ringkasan — versi penuh di README.md)
+> 1. **JANGAN PERNAH menyentuh repository `whyuangga/wah-anggaaa` (v1)** —
+>    arsip versi dark mode milik owner. Berlaku untuk kode, branch, dan
+>    seluruh setting deploy (Pages/Vercel).
+> 2. **Deployment Vercel harus selalu sama dengan branch `main` repo ini.**
+>    Disamakan HANYA lewat relink project Vercel ke `wah-anggaaa-v2`
+>    (dashboard Vercel / Vercel token dari owner) — TIDAK dengan mirror
+>    kode ke v1. Per 2026-09-12 Vercel masih menyajikan v1 (dark) secara
+>    sengaja sampai owner me-relink; jangan "diperbaiki" lewat v1.
+
 > **Branch:** `redesign/landing-light` (dari `main` @ 8de5169)
 > **Status:** EXECUTED (2026-09-11) — P0–P4 selesai di branch ini. Tinggal review visual + merge.
 > **Ganti:** PLAN v1 (dark freeform + WebGL). Isi lama tetap di git history / branch `main`.

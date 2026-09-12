@@ -1,5 +1,29 @@
 # WAH:ANGGAAA — Portfolio
 
+> ## 🚨 ATURAN KERAS untuk AI/agen yang bekerja di repo ini
+> **WAJIB dibaca sebelum melakukan apa pun. Melanggar aturan ini = mengulang insiden 12 Sep 2026 yang membuat owner sangat keberatan.**
+>
+> 1. **JANGAN PERNAH menyentuh repository `whyuangga/wah-anggaaa` (v1).**
+>    Tidak boleh push/commit/mirror kode, membuat/menghapus branch, mengubah
+>    setting GitHub Pages atau Vercel, maupun operasi apa pun di repo itu.
+>    Repo v1 adalah arsip **versi dark mode** milik owner.
+> 2. **Deployment Vercel (`https://wah-anggaaa.vercel.app`) harus selalu sama
+>    versinya dengan branch `main` repository ini (`wah-anggaaa-v2`).**
+>    - ✅ Cara BENAR: owner menghubungkan project Vercel ke `wah-anggaaa-v2`
+>      via dashboard Vercel (Settings → Git → Connected Repository), atau
+>      deploy memakai Vercel token yang diberikan owner secara eksplisit.
+>    - ❌ Cara DILARANG: menyalin/memirror kode ke repo v1 supaya Vercel
+>      "menjadi sama" — itu sama dengan menyentuh v1 (pelanggaran aturan 1).
+>    - Status per 2026-09-12: project Vercel masih terhubung ke v1 sehingga
+>      live menyajikan v1 (dark) **secara sengaja** sampai owner me-relink.
+>      JANGAN "memperbaiki" ketidaksesuaian ini lewat repo v1.
+> 3. **Deployment resmi v2**: `https://whyuangga.github.io/wah-anggaaa-v2/`
+>    (branch `gh-pages`, build base `/wah-anggaaa-v2/`). Untuk otomasi
+>    (push main → Pages deploy), salin `scripts/deploy-pages.workflow.yml`
+>    ke `.github/workflows/` — butuh token berscope `workflow`.
+> 4. **Verifikasi kesetaraan deploy**: `VERCEL=1 npm run build`, lalu bandingkan
+>    sha256 `dist/assets/index-*.js` dengan yang disajikan live.
+
 Portfolio satu halaman (+ About, Contact, 11 case study, Jurnal) bertema **terang,
 tipografis, dan editorial**. Isinya 11 karya fiktif: "taman bermain satu orang":
 brand khayalan yang digarap serius. Identitas visual v2.3: paper `#EAE8E1` +
