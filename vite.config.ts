@@ -6,9 +6,14 @@ export default defineConfig(() => {
   return {
     // Base adaptif per platform:
     // - Vercel (root domain)        → '/'
-    // - GitHub Pages (project page) → '/wah-anggaaa/'
+    // - GitHub Pages (repo v2)      → '/wah-anggaaa-v2/' (via PAGES_DEPLOY di workflow)
+    // - dev lokal                   → '/wah-anggaaa/' (dipakai suite e2e bawaan)
     // Router basename di App.tsx otomatis mengikuti via BASE_URL.
-    base: process.env.VERCEL ? '/' : '/wah-anggaaa/',
+    base: process.env.VERCEL
+      ? '/'
+      : process.env.PAGES_DEPLOY
+        ? '/wah-anggaaa-v2/'
+        : '/wah-anggaaa/',
     plugins: [react(), tailwindcss()],
     build: {
       rollupOptions: {

@@ -21,7 +21,7 @@ maupun Vercel dari codebase yang sama.
 | Platform     | URL                                              |
 | ------------ | ------------------------------------------------ |
 | Vercel       | `https://wah-anggaaa.vercel.app`                 |
-| GitHub Pages | `https://whyuangga.github.io/wah-anggaaa/`       |
+| GitHub Pages | `https://whyuangga.github.io/wah-anggaaa-v2/`    |
 
 ---
 
@@ -310,7 +310,7 @@ Satu codebase, dua target — dibedakan otomatis oleh `vite.config.ts`:
 
 | Target | `base` | Router basename | Fallback SPA |
 | ------ | ------ | --------------- | ------------ |
-| GitHub Pages | `/wah-anggaaa/` | otomatis via `BASE_URL` | `dist/404.html` (salinan index) |
+| GitHub Pages | `/wah-anggaaa-v2/` | `PAGES_DEPLOY` via workflow `deploy-pages` | `dist/404.html` (salinan index) |
 | Vercel (`VERCEL=1`) | `/` | otomatis via `BASE_URL` | `vercel.json` rewrites |
 
 - **GitHub Pages**: workflow `.github/workflows/deploy.yml` (build → artifact →

@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useLayoutEffect,
   useRef,
   useState,
@@ -78,6 +79,7 @@ export default function WorksHuy() {
   const flingingRef = useRef(false); // intro fling aktif → scrub scroll dibiarkan
   const [idx, setIdx] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuOpenRef = useRef(false); // mirror utk listener keydown (dipasang sekali)
   const hRef = useRef(900);
   const clipTopRef = useRef(0); // tinggi "clipping" atas reel list (hindari chrome)
 
@@ -89,6 +91,12 @@ export default function WorksHuy() {
 
   const reduced =
     typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // mirror state menu ke ref: listener keydown dipasang sekali di layout
+  // effect, jadi butuh nilai terkini tanpa re-subscribe.
+  useEffect(() => {
+    menuOpenRef.current = menuOpen;
+  }, [menuOpen]);
 
   /** lompat ke proyek i lewat PUTARAN TERDEKAT (tidak pernah rewind jauh) */
   const jump = (i: number) => {
@@ -177,7 +185,10 @@ export default function WorksHuy() {
       // (render modulo), dan ini terjadi hanya saat user berhenti, jadi
       // gesture aktif tidak pernah diutak-atik browser pun tidak sempat
       // klaim. Hasil: tepi container (±12 putaran jauhnya) MUSTAHIL tersentuh.
+      // Guard fling: selama intro fling memegang kendali render, jangan
+      // jadwalkan snap/re-anchor — cegah tarik-menarik visual paralel.
       window.clearTimeout(idleTimer);
+      if (flingingRef.current) return;
       idleTimer = window.setTimeout(() => {
         const h = hRef.current || 1;
         const raw = area.scrollTop / h;
@@ -216,6 +227,8 @@ export default function WorksHuy() {
       const down = e.key === 'ArrowRight' || e.key === 'ArrowDown';
       const up = e.key === 'ArrowLeft' || e.key === 'ArrowUp';
       if (!down && !up) return;
+      // menu mobile terbuka → reel di belakang overlay tidak ikut bergerak
+      if (menuOpenRef.current) return;
       e.preventDefault();
       const h = hRef.current || 1;
       const k = Math.round(area.scrollTop / h) + (down ? 1 : -1);
