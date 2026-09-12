@@ -1,6 +1,6 @@
 import { motion } from 'motion/react';
 import { useParams } from 'react-router-dom';
-import { Fragment } from 'react';
+import { Fragment, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import Footer from '../components/Footer';
 import Seo from '../components/Seo';
@@ -65,6 +65,17 @@ function Figure({ src, blur, alt, n }: { src: string; blur: string; alt: string;
 export default function WorkCase() {
   const { slug } = useParams();
   const idx = WORKS.findIndex((w) => w.slug === slug);
+  // "← semua karya" nanti harus mengembalikan home ke proyek INI (terakhir
+  // dilihat, termasuk saat geser prev/next di case) — dicatat di sessionStorage
+  useEffect(() => {
+    if (idx >= 0) {
+      try {
+        sessionStorage.setItem('reel:last', String(idx));
+      } catch {
+        /* private mode: abaikan */
+      }
+    }
+  }, [idx]);
   if (idx === -1) return <NotFound />;
   const w = WORKS[idx];
   const prev = WORKS[(idx - 1 + WORKS.length) % WORKS.length];

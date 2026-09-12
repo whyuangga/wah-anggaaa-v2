@@ -74,6 +74,11 @@ header ala HUYMI**:
   container secara NATIVE (momentum ikut native), tepi buffer ±6 putaran
   tidak terjangkau → mustahil mentok; scroll-idle 160ms snap ke layar
   terdekat. Scrollbar disembunyikan (`.reel-scroll`)
+- **re-anchor senyap (v2.13)**: tiap scroll idle, indeks layar di luar pita
+  tengah digeser diam-diam 1–2 putaran penuh KE DALAM pita — frame identik,
+  user sedang berhenti, jadi tidak ada gesture yang dipotong. Dengan buffer
+  24 putaran (528 layar) + re-anchor, tepi container secara fisik tidak bisa
+  dijangkau dari arah mana pun (mobile & desktop, dua-duanya)
 - `overscroll-behavior-y: none` di html: pull-to-refresh tidak mencuri
 
 - **klik kartu aktif → case study** (overlay button di slot tengah;

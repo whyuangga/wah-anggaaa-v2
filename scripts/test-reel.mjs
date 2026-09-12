@@ -140,9 +140,26 @@ const caseLayout = await page.evaluate(() => {
 ok('case: foto di ATAS, judul+deskripsi di bawah', caseLayout.photoTop < caseLayout.titleTop, `img y=${caseLayout.photoTop?.toFixed(0)} < h1 y=${caseLayout.titleTop?.toFixed(0)}`);
 ok('case: link balik "← semua karya" ada', caseLayout.back === true);
 await page.screenshot({ path: SHOTS + '/10-case-focus.png' });
+
 await page.goBack({ waitUntil: 'networkidle' }).catch(() => {});
 await page.waitForSelector('section[aria-label^="Selected works"]', { timeout: 20000 });
 await page.waitForTimeout(2600); // fling ulang di home → tunggu settle penuh
+
+// ---- 4a2. resume: kembali ke PROYEK TERAKHIR, bukan selalu proyek 1 ----
+await scrollToF(7);
+await page.waitForTimeout(500);
+let sR = await state();
+ok('sebelum masuk case: proyek 8 tampil', sR.activeNo === '8', sR.activeNo);
+await page.click('button[aria-label^="buka case study"]');
+await page.waitForTimeout(2600);
+const storedIdx = await page.evaluate(() => sessionStorage.getItem('reel:last'));
+ok('case mencatat proyek terakhir (idx 7)', storedIdx === '7', String(storedIdx));
+await page.click('text=← semua karya');
+await page.waitForSelector('section[aria-label^="Selected works"]', { timeout: 20000 });
+await page.waitForTimeout(3800); // remount home + fling mengendap
+let sBack = await state();
+ok('kembali → proyek 8 (bukan melompat ke 1)', sBack.activeNo === '8', sBack.activeNo);
+
 
 // ---- 4c. desktop: wheel-UP di 001 → buffer menyerap, proyek mundur ----
 await scrollToF(0);
@@ -222,7 +239,7 @@ await page.close();
   await m.waitForTimeout(5200);
   const mg = await m.evaluate(() => {
     const r = window.__reel;
-    return { top: 0, h: r.h(), start: r.start, vw: innerWidth, docW: document.documentElement.scrollWidth };
+    return { top: 0, h: r.h(), start: r.start, screens: r.screens, vw: innerWidth, docW: document.documentElement.scrollWidth };
   });
   await m.evaluate((y) => window.__reel.setY(y), mg.start * mg.h);
   await m.waitForTimeout(400);
@@ -255,6 +272,31 @@ await page.close();
     return nrEl?.nextElementSibling?.querySelector('span')?.textContent?.trim();
   });
   ok('mobile: wrap tetap jalan (f=11 → 1)', wrapNo === '1', wrapNo);
+  ok('mobile: buffer 24 putaran penuh', mg.screens >= 528, String(mg.screens));
+  // re-anchor SENYAP: tarik 30 layar ke kiri (di luar pita) → harus diam-diam
+  // dipindah +44 layar tanpa mengubah view sama sekali
+  await m.evaluate((y) => window.__reel.setY(y), (mg.start - 30) * mg.h);
+  await m.waitForTimeout(140);
+  const noBefore = await m.evaluate(() => {
+    const el = [...document.querySelectorAll('p')].find((p) => p.textContent.trim() === 'nr.');
+    return el?.nextElementSibling?.querySelector('span')?.textContent?.trim();
+  });
+  await m.waitForTimeout(800);
+  const ra = await m.evaluate(() => {
+    const el = [...document.querySelectorAll('p')].find((p) => p.textContent.trim() === 'nr.');
+    return {
+      y: window.__reel.y(),
+      h: window.__reel.h(),
+      start: window.__reel.start,
+      no: el?.nextElementSibling?.querySelector('span')?.textContent?.trim(),
+    };
+  });
+  const fWas = 14; // mod(-30, 22)
+  ok(
+    're-anchor: di luar pita → ditarik diam-diam, view tak berubah',
+    Math.abs(ra.y - (ra.start + fWas) * ra.h) < 2 && ra.no === noBefore,
+    `${noBefore}→${ra.no} @layar ${(ra.y / ra.h - ra.start).toFixed(1)}`,
+  );
   ok('mobile: tanpa overflow horizontal', mg.docW <= mg.vw + 1, `doc=${mg.docW}`);
   await m.evaluate((y) => window.__reel.setY(y), (mg.start + 3) * mg.h);
   await m.waitForTimeout(500);
@@ -282,6 +324,20 @@ await page.close();
       hasClose: !!document.querySelector('button[aria-label="tutup menu"]'),
     }));
     ok('about (mobile): overlay menu identik home (work/about/contact/journal + tutup)', overlay.hasWork && overlay.hasClose);
+    await a.waitForTimeout(1000); // biarkan stagger & morph selesai
+    const animState = await a.evaluate(() => {
+      const btn = document.querySelector('button[data-open="true"]');
+      const l1 = btn ? getComputedStyle(btn.querySelector('.burger-line')).transform : 'none';
+      const rows = [...document.querySelectorAll('.menu-overlay .menu-row')];
+      return {
+        morphed: /matrix\d*\(/.test(l1) && l1 !== 'none',
+        rowsN: rows.length,
+        rowShown: rows.length >= 6 && rows.every((r) => getComputedStyle(r).opacity === '1'),
+        vis: getComputedStyle(document.querySelector('.menu-overlay')).visibility,
+      };
+    });
+    ok('burger morph: garis → ✕ (transform aktif)', animState.morphed);
+    ok('overlay anim: 6 baris fade+naik, root visible', animState.rowShown && animState.vis === 'visible' && animState.rowsN === 6, `rows=${animState.rowsN} vis=${animState.vis}`);
     await a.screenshot({ path: SHOTS + '/11-mobile-menu-about.png' });
   }
   await a.close();
@@ -320,7 +376,9 @@ await page.close();
   await tpage.waitForTimeout(250);
   await swipe(650, -350); // jari naik ±1000px = >1 layar
   ok('touch: swipe menembus batas virtual → wrap mulus', (await getNo()) === '1', String(await getNo()));
-  ok('touch: scrollTop lanjut (tidak clamp di tepi)', (await getY()) > TY(21) + 500, String(await getY()));
+  const ta = await tpage.evaluate(() => ({ y: window.__reel.y(), h: window.__reel.h(), start: window.__reel.start, screens: window.__reel.screens }));
+  const fAfter = ((ta.y / ta.h - ta.start) % ta.screens + ta.screens) % ta.screens;
+  ok('touch: swipe lanjut (di clamp TIDAK — re-anchor senyap di pita tengah)', fAfter >= 0 && fAfter <= 22 && ta.y > 0, `f=${fAfter.toFixed(1)} @layar ${((ta.y / ta.h) - ta.start).toFixed(0)}`);
 
   // (b) 10 swipe panjang nonstop ke bawah: tidak pernah mentok di mana pun
   const ys = [];

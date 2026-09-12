@@ -552,3 +552,40 @@ native scroll dipindah ke container panjang yang tak pernah habis.
 6.660px tanpa satu pun mentok; tembus wrap virtual 21→0 mulus; swipe
 ½ layar snap balik; swipe ≥1 layar 001→011; `window.scrollY === 0`
 selamanya; desktop 10× wheel → 3,4,5,…,11,1. **48/48 PASS.**
+
+## 21. v2.13 — re-anchor anti-mentok + resume proyek terakhir + animasi hamburger (2026-09-12)
+
+**User:** (1) masih mentok dua arah di mobile, (2) "← semua karya" selalu
+balik ke proyek 1, (3) hamburger terasa statis.
+
+**(1) Anti-mentok lapis kedua.** Model proxy v2.12 sudah tidak menyentuh
+gesture sama sekali, tapi masih punya TEPI secara teori. Sekarang:
+- buffer 12→24 putaran (REEL_SCREENS = 528 layar, start di tengah);
+- **re-anchor senyap**: handler scroll-idle (160ms) setelah snap — kalau
+  indeks layar keluar dari pita [START, START+22], `scrollTop` dilompatkan
+  1–2 putaran penuh ke dalam pita. Hanya terjadi saat user BERHENTI
+  (bukan di tengah gesture → tidak perang dengan anchor browser) dan
+  view-nya IDENTIK (render modulo) → 100% tak terlihat. E2e memaksa
+  posisi ke 30 layar di luar pita: ditarik pulang tanpa view berubah.
+  Kombinasi ini membuat tepi mustahil disentuh dari arah mana pun.
+
+**(2) Resume.** `apply()` menulis idx ke `sessionStorage['reel:last']` tiap
+ganti proyek; WorkCase menulis idx-nya saat dibuka (prev/next ikut);
+mount home membaca → `scrollTop = (START+saved)*h` dan **intro fling
+mengendap di `saved`** (bukan selalu 0). "← semua karya" → kembali ke
+proyek terakhir dilihat. E2e: f=7 → case (store '7') → link balik →
+proyek 8 tampil lagi ✓.
+
+**(3) Animasi menu mobile.** Komponen `MenuBurger` baru (dipakai Header &
+chrome home): 3 garis MORPH jadi ✕ (atas/bawah rotate ±45°, tengah fade,
+transisi 0.38s cubic-bezier). MenuOverlay jadi SELALU mounted (visibility
+CSS) supaya buka-dan-tutup dua-duanya dianimasikan: root fade 0.3s,
+6 baris (`menu-row`: header, 4 link, footer) naik stagger 60ms
+cubic-bezier(.16,1,.3,1); × punya hover rotate-90. Prop baru `onHomeTop`
+(WorkOverlay 'work.' di home = anchor reel ke layar 1, bukan window.scrollTo
+yang sudah tidak ada). Reduced branch: overlay keluar dari <section>
+(fragment) supaya tidak dihitung sebagai layar reel.
+
+**Verifikasi:** tsc + build bersih; e2e dirombak ke hook `__reel` penuh:
+**55/55 PASS** — termasuk swipe CDP nyata menembus wrap dengan re-anchor
+aktif, 10× swipe nonstop, resume proyek 8, morph ✕ + stagger 6 baris.

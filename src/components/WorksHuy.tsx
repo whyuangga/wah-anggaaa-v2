@@ -8,6 +8,7 @@ import gsap from 'gsap';
 import { WORKS } from '../data/works';
 import { useGo } from '../lib/transition';
 import MenuOverlay from './MenuOverlay';
+import MenuBurger from './MenuBurger';
 
 const N = WORKS.length;
 /** tinggi item list (px) — HARUS sama dengan class `h-[60px] md:h-[84px]` di markup */
@@ -22,8 +23,8 @@ const TOTAL = LOOPS * N; // langkah virtual 0..TOTAL; indeks tampil = round(f) m
 // dan kalaupun sampai, frame-nya identik (render murni modulo) → tak ada
 // yang bisa "mentok". Ini teknik yang sama dg ocular/HUYMI: halaman TIDAK
 // memakai native scroll window sama sekali.
-const REEL_SCREENS = TOTAL * 12;
-const REEL_START = TOTAL * 6;
+const REEL_SCREENS = TOTAL * 24;
+const REEL_START = TOTAL * 12;
 const SPACING = 0.55; // jarak antar kartu = 0,55 × tinggi stage (screenshot ±0,55vh)
 const MAXTILT = 5.5; // derajat kemiringan kartu tetangga (tengah = 0°, melurus saat masuk)
 const PEEK = 1.6; // kartu tampil selama |jarak| ≤ PEEK
@@ -134,6 +135,12 @@ export default function WorksHuy() {
       if (i !== idxRef.current) {
         idxRef.current = i;
         setIdx(i);
+        // "proyek terakhir yang dilihat" → home lanjut dari sini saat kembali
+        try {
+          sessionStorage.setItem('reel:last', String(i));
+        } catch {
+          /* private mode: abaikan */
+        }
       }
     };
 
@@ -145,9 +152,18 @@ export default function WorksHuy() {
     // momentum, dan keyboard semuanya NATIVE di dalam container → tidak ada
     // preventDefault, tidak ada recenter, tidak ada gesture yang dicuri
     // browser. Looping dijamin modulo + buffer, bukan oleh akrobatika.
-    area.scrollTop = REEL_START * (hRef.current || 1);
+    // resume: masuk kembali dari halaman case study → mendarat di proyek
+    // TERAKHIR yang dilihat, bukan selalu proyek 1
+    let saved = 0;
+    try {
+      const raw = parseInt(sessionStorage.getItem('reel:last') ?? '0', 10);
+      if (Number.isFinite(raw)) saved = Math.min(N - 1, Math.max(0, raw));
+    } catch {
+      /* noop */
+    }
+    area.scrollTop = (REEL_START + saved) * (hRef.current || 1);
     const fFromScroll = () => mod(area.scrollTop / (hRef.current || 1) - REEL_START, TOTAL);
-    apply(0);
+    apply(saved);
 
     let idleTimer: number | undefined;
     const onScroll = () => {
@@ -155,13 +171,22 @@ export default function WorksHuy() {
         fRef.current = fFromScroll();
         apply(fRef.current);
       }
-      // snap manual: scroll berhenti ±160ms → geser halus ke layar terdekat
+      // snap manual: scroll berhenti ±160ms → geser halus ke layar terdekat.
+      // LALU re-anchor SENYAP: kalau indeks layar sudah di luar pita tengah,
+      // geser diam-diam 1–2 putaran penuh ke dalam pita — frame-nya IDENTIK
+      // (render modulo), dan ini terjadi hanya saat user berhenti, jadi
+      // gesture aktif tidak pernah diutak-atik browser pun tidak sempat
+      // klaim. Hasil: tepi container (±12 putaran jauhnya) MUSTAHIL tersentuh.
       window.clearTimeout(idleTimer);
       idleTimer = window.setTimeout(() => {
         const h = hRef.current || 1;
-        const k = Math.min(REEL_SCREENS, Math.max(0, Math.round(area.scrollTop / h)));
-        if (Math.abs(area.scrollTop / h - k) > 0.002) {
+        const raw = area.scrollTop / h;
+        const k = Math.min(REEL_SCREENS, Math.max(0, Math.round(raw)));
+        const anchored = REEL_START + mod(k - REEL_START, TOTAL);
+        if (Math.abs(raw - k) > 0.002) {
           area.scrollTo({ top: k * h, behavior: 'smooth' });
+        } else if (anchored !== k) {
+          area.scrollTop = anchored * h;
         }
       }, 160);
     };
@@ -173,7 +198,7 @@ export default function WorksHuy() {
     flingingRef.current = true;
     fRef.current = TOTAL;
     const fling = gsap.to(flingObj, {
-      f: 0,
+      f: saved,
       duration: 1.8,
       delay: 0.1,
       ease: 'power4.out',
@@ -295,16 +320,12 @@ export default function WorksHuy() {
           </div>
         </div>
 
-        {/* chrome HUYMI — hamburger (mobile, di KIRI) */}
-        <button
-          onClick={() => setMenuOpen(true)}
-          aria-label="buka menu"
-          className="absolute top-5 left-5 z-20 flex h-10 w-10 cursor-pointer flex-col items-center justify-center gap-[5px] md:hidden"
-        >
-          <span className="h-[2px] w-6 bg-ink" />
-          <span className="h-[2px] w-6 bg-ink" />
-          <span className="h-[2px] w-6 bg-ink" />
-        </button>
+        {/* chrome HUYMI — hamburger (mobile, di KIRI) — morph ke ✕ via MenuBurger */}
+        <MenuBurger
+          open={menuOpen}
+          onToggle={() => setMenuOpen((o) => !o)}
+          className="absolute top-5 left-5 z-20 md:hidden"
+        />
 
         {/* kanan atas (desktop) */}
         <div className="absolute top-7 right-4 hidden text-right md:top-8 md:right-7 md:block">
@@ -449,16 +470,20 @@ export default function WorksHuy() {
   };
 
   /* ---------- overlay menu (mobile) — komponen shared MenuOverlay ---------- */
-  const menuOverlay = (<MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} />);
+  const menuOverlay = (
+    <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} onHomeTop={goTop} />
+  );
 /* ---------- reduced motion: 11 layar statis ---------- */
   if (reduced) {
     return (
-      <section ref={sectionRef} aria-label="Selected works">
-        {WORKS.map((_, j) => (
-          <div key={j}>{renderStage(j, false)}</div>
-        ))}
+      <>
+        <section ref={sectionRef} aria-label="Selected works">
+          {WORKS.map((_, j) => (
+            <div key={j}>{renderStage(j, false)}</div>
+          ))}
+        </section>
         {menuOverlay}
-      </section>
+      </>
     );
   }
 

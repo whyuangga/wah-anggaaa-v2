@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { useJakartaTime } from '../hooks/useJakartaTime';
 import { isActivePath, useGo } from '../lib/transition';
 import MenuOverlay from './MenuOverlay';
+import MenuBurger from './MenuBurger';
 
 const LINKS = [
   { to: '/about', label: 'about' },
@@ -46,15 +47,11 @@ export default function Header() {
       >
         <nav aria-label="Navigasi utama" className="flex items-center justify-between px-5 md:px-10 py-5">
           {/* mobile: hamburger kiri (ala home) */}
-          <button
-            onClick={() => setMenu(true)}
-            aria-label="buka menu"
-            className="flex h-10 w-10 -ml-2 cursor-pointer flex-col items-center justify-center gap-[5px] md:hidden"
-          >
-            <span className="h-[2px] w-6 bg-ink" />
-            <span className="h-[2px] w-6 bg-ink" />
-            <span className="h-[2px] w-6 bg-ink" />
-          </button>
+          <MenuBurger
+            open={menu}
+            onToggle={() => setMenu((o) => !o)}
+            className="-ml-2 md:hidden"
+          />
 
           <button
             onClick={() => go('/')}
