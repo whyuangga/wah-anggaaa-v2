@@ -123,17 +123,21 @@ header ala HUYMI**:
   auto-recenter di batas); klik item = lompat lewat putaran terdekat
 - **meta** kiri tengah (role / launching / category, kolom label:value)
 - **angka raksasa** kiri bawah: `nr.` + `1`…`11` (Heros bold, tanpa zero-pad) + `/ 11`
-- kiri atas: teks vertikal `portfolio '26` + `11 works — jakarta, id`
 - kanan atas: `[ just for fun ] / working from jakarta`
 - kiri bawah: `scroll ↓`; kanan bawah: dua kotak ■ □
-- **header HUYMI**: wordmark `WAH:ANGGAAA` kiri-atas (desktop), blok
-  `menu` + bar hitam vertikal + list serif, `[ just for fun ] / working
-  from jakarta` kanan-atas. **Panah "→" di menu = efek hover** (slide-in,
+- **chrome home (v2.19)**: wordmark **terminal prompt** `> wah:anggaaa` +
+  kursor blok (lowercase, tanpa asset — murni tipografi; kursor statis saat
+  tiba, berkedip saat hover/focus; motif kedip tampil di intro). Teks
+  vertikal kiri lama (`portfolio '26` dll) **dihapus**. Blok `menu` + bar
+  hitam vertikal + list serif, `[ just for fun ] / working from jakarta`
+  kanan-atas. **Panah "→" di menu = efek hover** (slide-in,
   CSS `.menu-arrow`) — bukan permanen. Header tipis versi lama (jam JKT)
-  tidak di-render di home — halaman lain tetap memakainya.
+  tidak di-render di home — halaman lain tetap memakainya (selalu
+  transparan sejak v2.18).
   **Mobile: hamburger di KIRI** (wordmark dihilangkan) → overlay penuh
   (link serif raksasa, `×` tutup, info studio di bawah).
   (Tombol panah lingkaran lama sudah dihapus — navigasi = scroll/list/keyboard.)
+- **v2.17**: klik kartu MENGINTIP → spotlight jadi fokus menggantikan tengah.
 - **panah lingkaran** = proyek berikutnya; klik list = lompat proyek;
   keyboard ↑↓←→ saat pinned
 - mobile: kartu reel diperkecil (28svh) & container di-right-pad 38vw, list

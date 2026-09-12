@@ -363,23 +363,23 @@ export default function WorksHuy() {
     ).toFixed(0);
     return (
       <div className="relative h-lvh overflow-hidden">
-        {/* kiri atas: teks vertikal */}
-        <div className="absolute left-4 top-20 hidden flex-col items-center gap-3 sm:flex md:left-7 md:top-24">
-          <span className="lbl text-ink/60" style={{ writingMode: 'vertical-rl' }}>
-            portfolio '26
-          </span>
-          <span className="lbl text-ink/35" style={{ writingMode: 'vertical-rl' }}>
-            {N} works — jakarta, id
-          </span>
-        </div>
-
-        {/* chrome HUYMI — wordmark kiri-atas */}
+        {/* chrome — wordmark kiri-atas (v2.19): TERMINAL PROMPT, tanpa asset.
+            lowercase + kursor blok statis (motif kedip ada di intro; di sini
+            kedip hanya saat hover/focus → frame e2e deterministik).
+            Teks vertikal kiri dihapus (v2.19, permintaan user). */}
         <button
           onClick={goTop}
           aria-label="wah:anggaaa — ke atas"
-          className="absolute top-6 left-7 z-10 hidden cursor-pointer font-display text-[22px] font-bold uppercase tracking-[0.05em] transition-opacity hover:opacity-70 md:block"
+          className="group absolute top-6 left-7 z-10 hidden cursor-pointer items-baseline gap-2 font-display text-[19px] font-medium tracking-[0.01em] transition-opacity hover:opacity-70 md:flex"
         >
-          WAH:ANGGAAA
+          <span aria-hidden className="text-ink/40">
+            &gt;
+          </span>
+          <span>wah:anggaaa</span>
+          <span
+            aria-hidden
+            className="wm-cursor inline-block h-[0.72em] w-[0.45em] translate-y-[0.06em] bg-ink/80"
+          />
         </button>
 
         {/* chrome HUYMI — blok MENU (desktop) */}
@@ -506,22 +506,25 @@ export default function WorksHuy() {
                     aria-label={`${im.title} — proyek ${im.index}`}
                   >
                     <p
-                      className={`font-display text-[9px] font-normal uppercase leading-[1.6] tracking-[0.16em] transition-colors duration-300 md:text-[11px] ${
+                      className={`font-display text-[9px] font-normal uppercase leading-[1.6] tracking-[0.16em] md:text-[11px] ${
                         active ? 'text-ink' : 'text-ink/35 group-hover:text-ink/60'
                       }`}
                     >
                       {im.category}
                     </p>
-                    {/* hover = micro-shift ke kanan (translate, bukan layout) */}
+                    {/* hover = micro-shift ke kanan (translate, bukan layout).
+                        Warna swap aktif TIDAK ditransisikan: frame harus
+                        deterministik <300ms setelah idx berganti (e2e
+                        membandingkan screenshot byte-identik). */}
                     <p
-                      className={`mt-0.5 font-serif text-[clamp(1rem,4.2vw,1.3rem)] leading-tight transition-[color,translate] duration-300 group-hover:translate-x-1 md:text-[clamp(1.15rem,2.1vw,1.55rem)] ${
+                      className={`mt-0.5 font-serif text-[clamp(1rem,4.2vw,1.3rem)] leading-tight transition-[translate] duration-300 group-hover:translate-x-1 md:text-[clamp(1.15rem,2.1vw,1.55rem)] ${
                         active ? 'text-ink' : 'text-ink/40 group-hover:text-ink/70'
                       }`}
                     >
                       {im.title}
                     </p>
                     <p
-                      className={`mt-1 hidden text-[10px] leading-[1.3] transition-colors duration-300 md:block ${
+                      className={`mt-1 hidden text-[10px] leading-[1.3] md:block ${
                         active ? 'text-ink/70' : 'text-ink/30 group-hover:text-ink/50'
                       }`}
                     >

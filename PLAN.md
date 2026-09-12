@@ -689,3 +689,33 @@ Computed `background-color` header = `rgba(0,0,0,0)` setelah scroll 600px
 di /about; screenshot menunjukkan wordmark+nav melayang tanpa bar paper.
 tsc bersih, build ok, e2e 57/57 + ekstra 16/16 (tak ada assertion yang
 memakai bg header). README (Struktur Proyek) disinkronkan.
+
+## 25. v2.19 — chrome home: teks vertikal dihapus, wordmark terminal prompt (2026-09-12)
+
+**Permintaan user:** mobile sudah oke; desktop: (1) hapus teks vertikal
+kiri, (2) wordmark lama kurang disukai & tidak ada asset logo — minta ide
+tanpa asset. User memilih arah **terminal prompt** (dari 4 opsi: terminal /
+outline raksasa / solid+outline / serif italic).
+
+### Implementasi (`WorksHuy.tsx`, `index.css`)
+- Blok teks vertikal `portfolio '26 / 11 works — jakarta, id` dihapus.
+- Wordmark desktop baru: `> wah:anggaaa` lowercase (Heros medium 19px) +
+  kursor blok `bg-ink/80`. Tanpa asset — murni tipografi dalam pagar desain.
+- Kursor STATIS saat tiba dan berkedip hanya saat hover/focus wordmark
+  (`cursor-blink 0,9s infinite` di `.group:hover .wm-cursor`): motif kedip
+  sudah tampil di intro, dan e2e tidak pernah hover wordmark → frame
+  screenshot byte-identik tetap deterministik. (Percobaan pertama dengan
+  kedip 2× saat masuk terbukti race melawan frame basi screenshot pertama.)
+- Fungsi klik wordmark tetap `goTop`; a11y label dipertahankan.
+
+### Regresi determinisme yang ketemu & fix (v2.16 list hover)
+Suite ekstra C1/C3 intermiten 14/16: diff box = dua band tipis di list
+kanan — warna item list masih dalam `transition-colors duration-300`
+(tambahan v2.16) saat screenshot `before` (300ms pasca setY) menangkap
+ekornya. Fix: warna swap aktif TIDAK ditransisikan (instant); transisi
+hanya `translate` untuk hover. Stabil 4× 16/16 sesudahnya.
+
+### Verifikasi
+tsc bersih (mobile-check2.mjs pre-existing), build ok, e2e 57/57 + ekstra
+16/16 (4 run beruntun), screenshot wordmark baru dikonfirmasi user-facing.
+README (fitur home) + PLAN disinkronkan.
