@@ -63,7 +63,8 @@ function Shell() {
           </Suspense>
         )}
       </div>
-      <Analytics />
+      {/* script insights hanya ada di host Vercel — di Pages/dev ia 404 */}
+      {import.meta.env.VERCEL && <Analytics />}
     </TransitionProvider>
   );
 }
