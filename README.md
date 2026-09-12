@@ -67,7 +67,7 @@ header ala HUYMI**:
   0,55×tinggi stage; bergerak bersama scroll (bukan crossfade tumpuk)
 - **looping tanpa ujung SESUNGGUHNYA — via SCROLL-PROXY (teknik ocular)**:
   window tidak pernah di-scroll; di dalamnya ada container `overflow-y`
-  tak terlihat berisi 12 putaran layar (264 × 100svh), stage `sticky`, dan
+  tak terlihat berisi 24 putaran layar (528 × 100svh), stage `sticky`, dan
   render = `scrollTop/h − START` dimodulo — …010 → 011 → 001 → 002 mulus
   dua arah di MOUSE, TRACKPAD, TOUCH, dan KEYBOARD. Tidak ada satu pun
   preventDefault/recenter/touchend-hack: wheel & sentuhan menggerakkan
@@ -176,7 +176,7 @@ fallback `prefers-reduced-motion` di setiap bagian.
   `rotate(−5.5°×clamp(d,−1,1))` — kartu tengah tegak 0°, tetangga ngintip
   miring dan melurus saat masuk; `visibility |d|≤1.6`; `zIndex` aktif di
   atas tetangga (chrome diberi `z-10` agar angka NR tak tertutup).
-- **List reel**: 3 lipatan WORKS; item aktif selalu di tengah
+- **List reel**: 4 lipatan WORKS; item aktif selalu di tengah
   (`translateY = h/2 − clip − (f+N+0.5)×ITEM`) — tidak pernah bolong saat
   wrap; **transform list milik GSAP** — tanpa style prop React (re-render
   bakal menimpa animasi di tengah scrub); style awal slot HARUS deterministik

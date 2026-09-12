@@ -49,7 +49,7 @@ const state = () =>
       return { vis: d.style.visibility, tf: d.style.transform, cy: r.top + r.height / 2 };
     });
     const listInner = stage.querySelector('div[class*="max-w-\\[320px\\]"] > div') ||
-      [...stage.querySelectorAll('div')].find((d) => d.className.includes('overflow-hidden') && d.children.length === 1 && d.querySelector(':scope > div').children.length === 33)?.firstElementChild;
+      [...stage.querySelectorAll('div')].find((d) => d.className.includes('overflow-hidden') && d.children.length === 1 && d.querySelector(':scope > div').children.length === 44)?.firstElementChild;
     const btns = [...stage.querySelectorAll('button[aria-label*="proyek"]')];
     const abRect = btns[11 + (parseInt(activeNo, 10) - 1)]?.getBoundingClientRect();
     const hitAt = (y) => document.elementFromPoint(W - 110, y)?.closest?.('button[aria-label*="proyek"]')?.getAttribute('aria-label') ?? null;

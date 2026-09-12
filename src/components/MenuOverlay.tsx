@@ -48,7 +48,7 @@ export default function MenuOverlay({
         <button
           onClick={onClose}
           aria-label="tutup menu"
-          className="menu-close cursor-pointer text-[28px] leading-none transition-transform duration-300 hover:rotate-90"
+          className="cursor-pointer text-[28px] leading-none transition-transform duration-300 hover:rotate-90"
         >
           ×
         </button>

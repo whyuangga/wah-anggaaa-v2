@@ -18,11 +18,11 @@ const itemH = () =>
 /* ---------- geometri reel (diukur dari screenshot HUYMI) ---------- */
 const LOOPS = 2; // gulungan penuh 0→…→N per putaran (bolak-balik tanpa ujung)
 const TOTAL = LOOPS * N; // langkah virtual 0..TOTAL; indeks tampil = round(f) mod N
-// Buffer scroll-proxy: 12 putaran layar, mulai di TENGAH (±6 putaran = ±132
-// layar = ±97rb px di 740px) — tepi container tidak akan pernah terjangkau,
-// dan kalaupun sampai, frame-nya identik (render murni modulo) → tak ada
-// yang bisa "mentok". Ini teknik yang sama dg ocular/HUYMI: halaman TIDAK
-// memakai native scroll window sama sekali.
+// Buffer scroll-proxy: 24 putaran layar, mulai di TENGAH (±12 putaran =
+// ±264 layar ≈ ±195rb px @740) — tepi container tidak akan pernah
+// terjangkau; kalaupun sampai, frame-nya identik (render murni modulo),
+// dan re-anchor idle menarik posisi pulang diam-diam → mustahil "mentok".
+// Teknik sama dg ocular/HUYMI: halaman TIDAK pakai native scroll window.
 const REEL_SCREENS = TOTAL * 24;
 const REEL_START = TOTAL * 12;
 const SPACING = 0.55; // jarak antar kartu = 0,55 × tinggi stage (screenshot ±0,55vh)
@@ -55,13 +55,14 @@ function slotAt(j: number, f: number, h: number) {
  *
  * Scroll VERTIKAL = reel carousel TANPA UJUNG, via SCROLL-PROXY (teknik
  * ocular/HUYMI): window tidak pernah di-scroll — yang di-scroll adalah
- * container overflow-y di dalamnya (isi 12 putaran layar, mulai di tengah);
+ * container overflow-y di dalamnya (isi 24 putaran layar, mulai di tengah);
  * stage `sticky`; render murni JARAK-MODULO atas (scrollTop/h) — jadi
  * …010 → 011 → 001 → 002 mulus dua arah di mouse, trackpad, touch, dan
  * keyboard, tanpa satu pun preventDefault/recenter. Snap manual ke tiap
  * proyek; klik list = lompat jalur terdekat.
- * INTRO FLING (ala huyml.co): saat mount, reel berputar cepat 2 putaran
- * lalu mengendap di proyek 1 (scrub scroll di-guard selama fling).
+ * INTRO FLING (ala huyml.co): saat mount, reel berputar cepat lalu mengendap
+ * di proyek TERAKHIR yang dilihat (sessionStorage 'reel:last'; default 001).
+ * Resume: pulang dari case study tidak lagi melompat ke proyek 1.
  * Mobile: kartu reel diperkecil & digeser kiri, list judul TETAP tampil.
  * Reduced motion: 11 layar statis berurutan (tanpa pin, tanpa loop, tanpa fling).
  */
@@ -114,7 +115,6 @@ export default function WorksHuy() {
 
     const apply = (f: number) => {
       const h = hRef.current;
-      const spacing = h * SPACING;
       // foto: reel looping — kartu di posisi JARAK TERDEKAT (modulo N)
       slotRefs.current.forEach((slot, j) => {
         if (!slot) return;
@@ -146,12 +146,12 @@ export default function WorksHuy() {
 
     // ————— VIRTUAL SCROLL ala ocular/HUYMI —————
     // Window TIDAK pernah di-scroll. Yang di-scroll adalah container
-    // `.reel-scroll` (overflow-y: scroll, isi 264 layar) dan stage-nya
+    // `.reel-scroll` (overflow-y: scroll, isi 528 layar) dan stage-nya
     // `sticky` — jadi visual selalu di tempat sementara scrollTop bebas
     // bergerak. f = (scrollTop/h − REEL_START) mod TOTAL. Wheel, sentuhan,
     // momentum, dan keyboard semuanya NATIVE di dalam container → tidak ada
-    // preventDefault, tidak ada recenter, tidak ada gesture yang dicuri
-    // browser. Looping dijamin modulo + buffer, bukan oleh akrobatika.
+    // preventDefault dan tidak ada satu pun scrollTo saat gesture hidup.
+    // Looping dijamin modulo + buffer + re-anchor idle, bukan akrobatika.
     // resume: masuk kembali dari halaman case study → mendarat di proyek
     // TERAKHIR yang dilihat, bukan selalu proyek 1
     let saved = 0;
@@ -193,7 +193,7 @@ export default function WorksHuy() {
     area.addEventListener('scroll', onScroll, { passive: true });
 
     // INTRO FLING ala HUYMI: begitu konten muncul, reel berputar cepat
-    // (2 putaran penuh menyapu semua proyek) lalu mengendap di proyek 001.
+    // (menyapu semua proyek) lalu mengendap di proyek tujuan (`saved`).
     const flingObj = { f: TOTAL };
     flingingRef.current = true;
     fRef.current = TOTAL;
@@ -336,7 +336,7 @@ export default function WorksHuy() {
         {/* foto: REEL VERTIKAL LOOPING ala HUYMI — kartu portrait 5:6, aktif
             di tengah tegak 0°, tetangga ngintip miring ±5,5° (melurus saat
             masuk tengah), jarak antar kartu 0,55×tinggi stage; 011 → 001 mulus.
-            Mobile: kartu kecil & geser kiri (mr-[38vw]) agar list judul muat */}
+            Mobile: kartu kecil, container dipotong right-[38vw] agar list muat */}
         <div className="pointer-events-none absolute inset-y-0 left-0 right-[38vw] md:right-0">
           {WORKS.map((im, j) => {
             const t = slotAt(j, f0, hNow);
