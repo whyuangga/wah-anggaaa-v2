@@ -160,6 +160,21 @@ await page.waitForTimeout(3800); // remount home + fling mengendap
 let sBack = await state();
 ok('kembali → proyek 8 (bukan melompat ke 1)', sBack.activeNo === '8', sBack.activeNo);
 
+// ---- 4a3. v2.17: klik kartu MENGINTIP → spotlight jadi tengah ----
+await scrollToF(0);
+await page.waitForTimeout(900);
+await page.click('button[aria-label="fokus: AELIAN"]'); // kartu ngintip di bawah
+await page.waitForTimeout(1600);
+s = await state();
+ok('klik kartu ngintip → spotlight menggantikan tengah (2)', s.activeNo === '2', s.activeNo);
+// kartu tengah BARU tetap buka case study (bukan spotlight lagi)
+await page.click('button[aria-label^="buka case study"]');
+await page.waitForTimeout(2600);
+const casePath2 = await page.evaluate(() => location.pathname);
+ok('tengah baru klik → case study aelian', casePath2.includes('/works/aelian'), casePath2);
+await page.goBack({ waitUntil: 'networkidle' }).catch(() => {});
+await page.waitForSelector('section[aria-label^="Selected works"]', { timeout: 20000 });
+await page.waitForTimeout(2600);
 
 // ---- 4c. desktop: wheel-UP di 001 → buffer menyerap, proyek mundur ----
 await scrollToF(0);

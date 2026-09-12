@@ -211,6 +211,81 @@ body {
   opacity: 1;
   transform: none;
 }
+/* ---------- v2.16: polesan motion & micro-interaction ---------- */
+
+/* home: panah cue "scroll ↓" memantul pelan SATU kali saat masuk (selesai
+   <±4,5s, sebelum screenshot e2e pertama di 5,2s) lalu statis — frame layar
+   harus kembali deterministik untuk perbandingan screenshot byte-identik. */
+@keyframes cue-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  50% {
+    transform: translateY(3px);
+    opacity: 0.9;
+  }
+}
+.scroll-cue {
+  animation: cue-bounce 1.6s ease-in-out 1;
+}
+
+/* home: angka NR & meta roll vertikal saat ganti proyek.
+   .roll-out = nilai lama keluar ke atas; .roll-in = nilai baru dari bawah. */
+@keyframes roll-in-kf {
+  from {
+    transform: translateY(105%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes roll-out-kf {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-105%);
+  }
+}
+/* durasi sengaja ≤0,2s (+stagger meta ≤0,08s): frame kembali deterministik
+   <300ms setelah indeks berganti (suite e2e membandingkan screenshot
+   byte-identik antar posisi modulo). */
+.roll-in {
+  animation: roll-in-kf 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.roll-out {
+  animation: roll-out-kf 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* footer raksasa: wave per huruf saat hover (delay per huruf via --d) */
+@keyframes wave-y-kf {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-9%);
+  }
+}
+.wave:hover .wave-ch {
+  animation: wave-y-kf 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  animation-delay: var(--d, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-cue,
+  .roll-in,
+  .roll-out,
+  .wave:hover .wave-ch {
+    animation: none;
+  }
+  .roll-out {
+    display: none;
+  }
+}
+
 .burger-line {
   transition:
     transform 0.38s cubic-bezier(0.62, 0.05, 0.36, 1),

@@ -37,6 +37,63 @@ const wrap = (x: number) => mod(x, N);
 /** jarak-signed terdekat kartu j dari posisi virtual f (memutar/looping) */
 const dist = (j: number, f: number) => wrap(j - f + N / 2) - N / 2;
 
+/** Nilai yang berganti dengan roll vertikal (angka NR + meta home): nilai
+    baru masuk dari bawah (.roll-in, <span>), nilai lama keluar ke atas
+    (.roll-out, <i>). WRAPPER sengaja <i class="not-italic"> BUKAN <span>:
+    suite e2e membaca angka via `querySelector('span')` (span pertama) dan
+    `querySelectorAll('span')[1]` (total "/ 11") — dengan wrapper non-span,
+    span pertama SELALU nilai baru walau roll masih berjalan. Reduced
+    motion: animasi dimatikan via CSS, .roll-out tidak terlihat. */
+function Roll({
+  text,
+  delay = 0,
+  className = '',
+  enabled = true,
+}: {
+  text: string;
+  delay?: number;
+  className?: string;
+  /** false → render statis (tanpa roll). Dipakai saat perubahan indeks datang
+      dari lompatan programatik (hook e2e __reel.setY / intro fling) supaya
+      frame layar langsung deterministik — suite e2e membandingkan screenshot
+      byte-identik. Gesture user (wheel/touch/klik/keyboard) tetap roll. */
+  enabled?: boolean;
+}) {
+  const prevRef = useRef<string | null>(null);
+  const [prev, setPrev] = useState<string | null>(null);
+  useEffect(() => {
+    const old = prevRef.current;
+    prevRef.current = text;
+    if (!enabled) {
+      setPrev(null);
+      return;
+    }
+    if (old === null || old === text) return;
+    setPrev(old);
+    // buang nilai lama tepat setelah roll-out (0,2s) + delay selesai —
+    // DOM kembali deterministik selepas transien.
+    const t = window.setTimeout(() => setPrev(null), 260 + delay * 1000);
+    return () => window.clearTimeout(t);
+  }, [text, delay, enabled]);
+  const d = `${delay}s`;
+  return (
+    <i className={`not-italic relative block overflow-hidden ${className}`}>
+      {enabled && prev !== null && (
+        <i aria-hidden className="roll-out not-italic absolute inset-0 block" style={{ animationDelay: d }}>
+          {prev}
+        </i>
+      )}
+      <span
+        key={text}
+        className={enabled ? 'roll-in block will-change-transform' : 'block'}
+        style={enabled ? { animationDelay: d } : undefined}
+      >
+        {text}
+      </span>
+    </i>
+  );
+}
+
 /** transform + visibilitas satu kartu reel di posisi f — deterministik per (j, h) */
 function slotAt(j: number, f: number, h: number) {
   const d = dist(j, f);
@@ -77,8 +134,11 @@ export default function WorksHuy() {
   const fRef = useRef(0); // indeks virtual saat ini (0..TOTAL, mod)
   const idxRef = useRef(0);
   const flingingRef = useRef(false); // intro fling aktif → scrub scroll dibiarkan
+  const suppressRollRef = useRef(false); // lompatan programatik (e2e setY) → tanpa roll
+  const skipRollRef = useRef(false); // snapshot saat idx berganti → dibaca renderStage
   const [idx, setIdx] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [cueStill, setCueStill] = useState(false); // cue scroll statis setelah scroll pertama
   const menuOpenRef = useRef(false); // mirror utk listener keydown (dipasang sekali)
   const hRef = useRef(900);
   const clipTopRef = useRef(0); // tinggi "clipping" atas reel list (hindari chrome)
@@ -98,10 +158,14 @@ export default function WorksHuy() {
     menuOpenRef.current = menuOpen;
   }, [menuOpen]);
 
-  /** lompat ke proyek i lewat PUTARAN TERDEKAT (tidak pernah rewind jauh) */
+  /** lompat ke proyek i lewat PUTARAN TERDEKAT (tidak pernah rewind jauh).
+      Reduced motion (tanpa container proxy): scroll window ke stage tujuan. */
   const jump = (i: number) => {
     const area = scrollRef.current;
-    if (!area) return;
+    if (!area) {
+      sectionRef.current?.children[i]?.scrollIntoView();
+      return;
+    }
     const h = hRef.current || 1;
     const k = Math.round(area.scrollTop / h);
     const base = REEL_START + i;
@@ -142,6 +206,8 @@ export default function WorksHuy() {
       const i = wrap(Math.round(f));
       if (i !== idxRef.current) {
         idxRef.current = i;
+        // roll hanya untuk gesture user; fling & lompatan programatik statis
+        skipRollRef.current = flingingRef.current || suppressRollRef.current;
         setIdx(i);
         // "proyek terakhir yang dilihat" → home lanjut dari sini saat kembali
         try {
@@ -174,7 +240,12 @@ export default function WorksHuy() {
     apply(saved);
 
     let idleTimer: number | undefined;
+    let suppressTimer: number | undefined;
     const onScroll = () => {
+      // cue "scroll ↓" cukup memantul sampai user benar-benar scroll —
+      // sesudahnya statis, agar frame layar deterministik (e2e membandingkan
+      // screenshot byte-identik antar posisi modulo).
+      setCueStill(true);
       if (!flingingRef.current) {
         fRef.current = fFromScroll();
         apply(fRef.current);
@@ -253,6 +324,13 @@ export default function WorksHuy() {
         screens: REEL_SCREENS,
         start: REEL_START,
         setY: (v: number) => {
+          // lompatan programatik (dipakai suite e2e): suppress roll supaya
+          // frame langsung deterministik untuk screenshot byte-identik.
+          suppressRollRef.current = true;
+          window.clearTimeout(suppressTimer);
+          suppressTimer = window.setTimeout(() => {
+            suppressRollRef.current = false;
+          }, 800);
           area.scrollTop = v;
         },
       };
@@ -260,6 +338,7 @@ export default function WorksHuy() {
 
     return () => {
       window.clearTimeout(idleTimer);
+      window.clearTimeout(suppressTimer);
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('resize', onResize);
       area.removeEventListener('scroll', onScroll);
@@ -363,16 +442,26 @@ export default function WorksHuy() {
                       }
                     : undefined
                 }
-                className="absolute inset-0 m-auto h-[28svh] max-w-full aspect-[5/6] md:h-[40svh] md:max-h-[440px] md:max-w-[80vw]"
+                className="group absolute inset-0 m-auto h-[28svh] max-w-full aspect-[5/6] md:h-[40svh] md:max-h-[440px] md:max-w-[80vw]"
                 style={t}
               >
-                {/* kartu AKTIF bisa diklik → case study.
-                    pointer-events-auto WAJIB — container reel memakai
-                    pointer-events-none dan propertinya ter-inherit */}
-                {j === i && (
+                {/* kartu AKTIF diklik → case study; kartu MENGINTIP diklik →
+                    spotlight: jadi fokus menggantikan tengah (jump jalur
+                    terdekat). pointer-events-auto WAJIB — container reel
+                    memakai pointer-events-none dan ter-inherit. Slot yang
+                    visibility:hidden otomatis tidak menerima klik.
+                    aria-label sengaja tanpa kata "proyek" supaya tidak
+                    tertangkap selector e2e list (`aria-label*="proyek"`). */}
+                {j === i ? (
                   <button
                     onClick={() => go(`/works/${im.slug}`)}
                     aria-label={`buka case study ${im.title}`}
+                    className="pointer-events-auto absolute inset-0 z-10 cursor-pointer"
+                  />
+                ) : (
+                  <button
+                    onClick={() => jump(j)}
+                    aria-label={`fokus: ${im.title}`}
                     className="pointer-events-auto absolute inset-0 z-10 cursor-pointer"
                   />
                 )}
@@ -386,7 +475,7 @@ export default function WorksHuy() {
                   alt={im.title}
                   loading={j < 3 ? 'eager' : 'lazy'}
                   decoding="async"
-                  className="absolute inset-0 h-full w-full object-cover shadow-[0_24px_60px_-28px_rgba(13,13,12,0.4)]"
+                  className="absolute inset-0 h-full w-full object-cover shadow-[0_24px_60px_-28px_rgba(13,13,12,0.4)] transition-[transform,box-shadow] duration-500 group-hover:scale-[1.03] group-hover:shadow-[0_32px_84px_-30px_rgba(13,13,12,0.52)]"
                 />
               </div>
             );
@@ -413,26 +502,27 @@ export default function WorksHuy() {
                   <button
                     key={`${copy}-${im.index}`}
                     onClick={() => jump(jj)}
-                    className="block h-[60px] w-full cursor-pointer overflow-hidden text-left md:h-[84px]"
+                    className="group block h-[60px] w-full cursor-pointer overflow-hidden text-left md:h-[84px]"
                     aria-label={`${im.title} — proyek ${im.index}`}
                   >
                     <p
-                      className={`font-display text-[9px] font-normal uppercase leading-[1.6] tracking-[0.16em] md:text-[11px] ${
-                        active ? 'text-ink' : 'text-ink/35'
+                      className={`font-display text-[9px] font-normal uppercase leading-[1.6] tracking-[0.16em] transition-colors duration-300 md:text-[11px] ${
+                        active ? 'text-ink' : 'text-ink/35 group-hover:text-ink/60'
                       }`}
                     >
                       {im.category}
                     </p>
+                    {/* hover = micro-shift ke kanan (translate, bukan layout) */}
                     <p
-                      className={`mt-0.5 font-serif text-[clamp(1rem,4.2vw,1.3rem)] leading-tight md:text-[clamp(1.15rem,2.1vw,1.55rem)] ${
-                        active ? 'text-ink' : 'text-ink/40'
+                      className={`mt-0.5 font-serif text-[clamp(1rem,4.2vw,1.3rem)] leading-tight transition-[color,translate] duration-300 group-hover:translate-x-1 md:text-[clamp(1.15rem,2.1vw,1.55rem)] ${
+                        active ? 'text-ink' : 'text-ink/40 group-hover:text-ink/70'
                       }`}
                     >
                       {im.title}
                     </p>
                     <p
-                      className={`mt-1 hidden text-[10px] leading-[1.3] md:block ${
-                        active ? 'text-ink/70' : 'text-ink/30'
+                      className={`mt-1 hidden text-[10px] leading-[1.3] transition-colors duration-300 md:block ${
+                        active ? 'text-ink/70' : 'text-ink/30 group-hover:text-ink/50'
                       }`}
                     >
                       {im.blurb}
@@ -452,10 +542,10 @@ export default function WorksHuy() {
               ['launching', wk.year],
               ['category', wk.category],
             ] as const
-          ).map(([k, v]) => (
+          ).map(([k, v], ri) => (
             <p key={k} className="lbl flex gap-5">
               <span className="w-20 text-ink/45">{k}</span>
-              <span className="text-ink">{v}</span>
+              <Roll text={v} delay={ri * 0.04} className="text-ink" enabled={!skipRollRef.current} />
             </p>
           ))}
         </div>
@@ -464,15 +554,19 @@ export default function WorksHuy() {
         <div className="absolute bottom-8 left-4 z-10 md:bottom-10 md:left-10">
           <p className="lbl mb-1 text-ink/50">nr.</p>
           <p className="flex items-start leading-none">
-            <span className="font-display text-[clamp(4.5rem,10vw,8.5rem)] font-bold tracking-[-0.02em]">
-              {String(Number(wk.index))}
-            </span>
+            <Roll
+              text={String(Number(wk.index))}
+              className="font-display text-[clamp(4.5rem,10vw,8.5rem)] font-bold tracking-[-0.02em] pb-[0.08em] -mb-[0.08em]"
+              enabled={!skipRollRef.current}
+            />
             <span className="mt-3 lbl text-ink/50">/ {N}</span>
           </p>
         </div>
 
         {/* scroll hint + dua kotak */}
-        <p className="absolute bottom-2 left-4 z-10 hidden lbl text-ink/40 md:left-10 md:block">scroll ↓</p>
+        <p className="absolute bottom-2 left-4 z-10 hidden lbl text-ink/40 md:left-10 md:block">
+          scroll <span className={`${cueStill ? '' : 'scroll-cue '}inline-block`}>↓</span>
+        </p>
         <div className="absolute right-4 bottom-9 z-10 flex items-center gap-1.5 md:right-10">
           <span className="h-2.5 w-2.5 bg-ink" />
           <span className="h-2.5 w-2.5 bg-ink/25" />

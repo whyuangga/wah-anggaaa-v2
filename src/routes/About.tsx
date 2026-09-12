@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { motion } from 'motion/react';
+import type { Variants } from 'motion/react';
 import type { ReactNode } from 'react';
 import Footer from '../components/Footer';
 import Seo from '../components/Seo';
@@ -84,6 +85,13 @@ const CAPABILITIES: [string, string[]][] = [
   ['Develop', ['React', 'GSAP', 'Tailwind', 'Three.js / WebGL']],
 ];
 
+/* stagger per item via SATU observer di <ul> (parent) — children menerima
+   lewat variants; lebih andal daripada whileInView per-item kecil. */
+const ITEM_VARIANTS: Variants = {
+  hide: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [...EASE] } },
+};
+
 export default function About() {
   const reduced = useMemo(
     () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
@@ -144,13 +152,26 @@ export default function About() {
             <div key={group}>
               <Reveal delay={gi * 0.1}>
                 <p className="lbl text-ink/45">{group}</p>
-                <ul className="mt-5 space-y-1.5">
+                <motion.ul
+                  variants={{
+                    hide: {},
+                    show: { transition: { staggerChildren: 0.07, delayChildren: gi * 0.1 } },
+                  }}
+                  initial={reduced ? 'show' : 'hide'}
+                  whileInView="show"
+                  viewport={{ once: true, margin: '-60px' }}
+                  className="mt-5 space-y-1.5"
+                >
                   {items.map((item) => (
-                    <li key={item} className="font-display font-medium tracking-tight text-[19px] leading-snug text-ink">
+                    <motion.li
+                      key={item}
+                      variants={ITEM_VARIANTS}
+                      className="font-display font-medium tracking-tight text-[19px] leading-snug text-ink transition-[translate] duration-300 hover:translate-x-1.5"
+                    >
                       {item}
-                    </li>
+                    </motion.li>
                   ))}
-                </ul>
+                </motion.ul>
               </Reveal>
             </div>
           ))}
@@ -172,14 +193,24 @@ export default function About() {
         <div className="mt-20 md:mt-28 max-w-2xl">
           <Reveal>
             <p className="lbl text-ink/45">colophon</p>
-            <ul className="mt-5 space-y-1.5 lbl text-[13px] leading-relaxed text-ink">
-              <li>type — tex gyre heros condensed + junicode + ibm plex mono</li>
-              <li>color — #eae8e1 + #0d0d0c</li>
-              <li>built — react + gsap + vite</li>
-              <li>
-                credit — tex gyre (GUST e-foundry, GUST Font License) · junicode (Peter S. Baker, SIL OFL 1.1)
-              </li>
-            </ul>
+            <motion.ul
+              variants={{ hide: {}, show: { transition: { staggerChildren: 0.07 } } }}
+              initial={reduced ? 'show' : 'hide'}
+              whileInView="show"
+              viewport={{ once: true, margin: '-40px' }}
+              className="mt-5 space-y-1.5 lbl text-[13px] leading-relaxed text-ink"
+            >
+              {[
+                'type — tex gyre heros condensed + junicode + ibm plex mono',
+                'color — #eae8e1 + #0d0d0c',
+                'built — react + gsap + vite',
+                'credit — tex gyre (GUST e-foundry, GUST Font License) · junicode (Peter S. Baker, SIL OFL 1.1)',
+              ].map((t) => (
+                <motion.li key={t} variants={ITEM_VARIANTS}>
+                  {t}
+                </motion.li>
+              ))}
+            </motion.ul>
           </Reveal>
         </div>
 

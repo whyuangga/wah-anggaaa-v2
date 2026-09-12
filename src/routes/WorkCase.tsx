@@ -1,6 +1,6 @@
 import { motion } from 'motion/react';
 import { useParams } from 'react-router-dom';
-import { Fragment, useEffect } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import Footer from '../components/Footer';
 import Seo from '../components/Seo';
@@ -36,11 +36,12 @@ function Reveal({
   );
 }
 
-/** satu gambar galeri dengan blur placeholder — warna asli, tanpa filter. */
+/** satu gambar galeri dengan blur placeholder — warna asli, tanpa filter.
+    Hover: scale pelan ala Ken Burns (transform saja, figure overflow-hidden). */
 function Figure({ src, blur, alt, n }: { src: string; blur: string; alt: string; n: number }) {
   return (
     <Reveal>
-      <figure className="relative overflow-hidden bg-ink/[0.045]">
+      <figure className="group relative overflow-hidden bg-ink/[0.045]">
         <span
           aria-hidden
           className="absolute inset-0 bg-cover bg-center scale-105"
@@ -54,11 +55,59 @@ function Figure({ src, blur, alt, n }: { src: string; blur: string; alt: string;
             e.currentTarget.style.opacity = '1';
             e.currentTarget.style.filter = 'blur(0px)';
           }}
-          className="relative w-full object-cover opacity-0 blur-[8px] transition-[opacity,filter] duration-700"
+          className="relative w-full object-cover opacity-0 blur-[8px] transition-[opacity,filter,transform] duration-700 group-hover:scale-[1.04]"
         />
       </figure>
       <p className="mt-3 lbl text-[10px] text-ink/35">[ fig. {String(n).padStart(2, '0')} ]</p>
     </Reveal>
+  );
+}
+
+/** Angka statistik count-up saat masuk viewport; suffix (%, +, dll) tetap.
+    Nilai non-numerik atau reduced motion: tampil apa adanya. */
+function CountUp({ value, className }: { value: string; className?: string }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const m = /^(\d+(?:[.,]\d+)?)(.*)$/.exec(value.trim());
+    if (reduced || !m) {
+      el.textContent = value;
+      return;
+    }
+    const target = parseFloat(m[1].replace(',', '.'));
+    const suffix = m[2];
+    const isInt = !/[.,]/.test(m[1]);
+    const fmt = (v: number) =>
+      (isInt ? String(Math.round(v)) : v.toFixed(1).replace('.', ',')) + suffix;
+    el.textContent = fmt(0);
+    let raf = 0;
+    const io = new IntersectionObserver(
+      ([en]) => {
+        if (!en.isIntersecting) return;
+        io.disconnect();
+        const t0 = performance.now();
+        const dur = 1100;
+        const step = (t: number) => {
+          const p = Math.min(1, (t - t0) / dur);
+          el.textContent = fmt(target * (1 - Math.pow(1 - p, 3)));
+          if (p < 1) raf = requestAnimationFrame(step);
+        };
+        raf = requestAnimationFrame(step);
+      },
+      { threshold: 0.5 },
+    );
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      cancelAnimationFrame(raf);
+    };
+  }, [value]);
+  return (
+    <p ref={ref} className={className}>
+      {value}
+    </p>
   );
 }
 
@@ -249,7 +298,10 @@ export default function WorkCase() {
             <div className="mt-8 grid grid-cols-3 gap-6">
               {w.stats.map(([label, value]) => (
                 <div key={label}>
-                  <p className="font-display font-bold tracking-tight text-[clamp(1.6rem,4.5vw,3rem)]">{value}</p>
+                  <CountUp
+                    value={value}
+                    className="font-display font-bold tracking-tight text-[clamp(1.6rem,4.5vw,3rem)]"
+                  />
                   <p className="mt-2 lbl text-[10px] md:text-[11px] text-ink/45">
                     {label}
                   </p>
@@ -278,13 +330,13 @@ export default function WorkCase() {
         <div className="mt-20 md:mt-28 pt-4 grid grid-cols-2 gap-6">
           <TLink to={`/works/${prev.slug}`} className="group block">
             <span className="lbl text-ink/45">[ ← prev ]</span>
-            <span className="block mt-3 font-display font-bold uppercase tracking-tight leading-[0.95] text-[clamp(1.4rem,4vw,2.6rem)] text-ink/60 group-hover:text-ink transition-colors">
+            <span className="block mt-3 font-display font-bold uppercase tracking-tight leading-[0.95] text-[clamp(1.4rem,4vw,2.6rem)] text-ink/60 transition-[color,translate] duration-300 group-hover:text-ink group-hover:-translate-x-1">
               {prev.title}
             </span>
           </TLink>
           <TLink to={`/works/${next.slug}`} className="group block text-right">
             <span className="lbl text-ink/45">[ next → ]</span>
-            <span className="block mt-3 font-display font-bold uppercase tracking-tight leading-[0.95] text-[clamp(1.4rem,4vw,2.6rem)] text-ink/60 group-hover:text-ink transition-colors">
+            <span className="block mt-3 font-display font-bold uppercase tracking-tight leading-[0.95] text-[clamp(1.4rem,4vw,2.6rem)] text-ink/60 transition-[color,translate] duration-300 group-hover:text-ink group-hover:translate-x-1">
               {next.title}
             </span>
           </TLink>

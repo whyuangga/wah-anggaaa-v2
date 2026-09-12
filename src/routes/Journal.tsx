@@ -49,13 +49,17 @@ export default function Journal() {
             >
               <TLink
                 to={`/journal/${p.slug}`}
-                className="group grid md:grid-cols-12 gap-2 md:gap-6 py-8"
+                className="group menu-item grid md:grid-cols-12 gap-2 md:gap-6 py-8"
               >
                 <span className="md:col-span-1 lbl text-ink/40">
                   {String(POSTS.length - i).padStart(3, '0')}
                 </span>
-                <span className="md:col-span-6 font-serif font-bold text-[clamp(1.4rem,3.4vw,2.4rem)] leading-tight group-hover:opacity-60 transition-opacity">
+                {/* hover: judul geser + panah slide-in (pola .menu-arrow home) */}
+                <span className="md:col-span-6 font-serif font-bold text-[clamp(1.4rem,3.4vw,2.4rem)] leading-tight transition-[opacity,translate] duration-300 group-hover:opacity-60 group-hover:translate-x-1.5">
                   {p.title}
+                  <span aria-hidden className="menu-arrow ml-2 inline-block w-5 text-left">
+                    →
+                  </span>
                 </span>
                 <span className="md:col-span-3 text-[14px] leading-relaxed text-ink/70">{p.desc}</span>
                 <span className="md:col-span-2 md:text-right lbl text-ink/40">

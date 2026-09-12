@@ -113,6 +113,10 @@ header ala HUYMI**:
 
 - **klik kartu aktif → case study** (overlay button di slot tengah;
   `pointer-events-auto` wajib karena container reel `pointer-events-none`)
+- **v2.17 — klik kartu MENGINTIP → spotlight**: kartu tetangga yang diklik
+  berputar jadi fokus menggantikan kartu tengah (jump jalur terdekat);
+  kartu tengah tetap = case study. Slot `visibility:hidden` otomatis tidak
+  menerima klik.
 - **list semua proyek** di kanan (kategori kecil + nama serif + blurb) —
   item aktif menyala, yang lain memudar; list dirender 4 lipatan sehingga
   ikut **looping mulus** dan tidak pernah bolong (termasuk saat
@@ -258,6 +262,24 @@ Guard `busyRef` anti navigasi ganda. Reduced motion: crossfade 0,12 dtk.
   `matchMedia` + ScrollTrigger scrub.
 - **Footer cascade**: huruf naik per huruf saat masuk viewport + wave yoyo saat hover.
 - Easing tunggal: `[0.22, 1, 0.36, 1]`.
+
+### 5. Polesan micro-interaction (v2.16)
+
+- **Home**: angka NR + meta kiri **roll vertikal** 0,2s saat ganti proyek
+  (nilai lama `.roll-out` ke atas, baru `.roll-in` dari bawah); item list
+  hover translate-x + terang; kartu aktif hover scale 1,03 + shadow dalam;
+  cue `scroll ↓` memantul sekali saat masuk lalu statis. Roll hanya untuk
+  gesture user — lompatan programatik (hook e2e `__reel.setY`, intro fling)
+  dirender statis supaya screenshot byte-identik e2e tetap deterministik.
+- **About**: capabilities & colophon stagger per item (satu observer di list,
+  `staggerChildren`) + hover translate item.
+- **Case study**: statistik **count-up** saat masuk viewport (suffix `%`/`+`
+  tetap; non-numerik/reduced = statis), galeri hover scale, prev/next translate.
+- **Journal**: hover baris → judul translate + panah `→` slide-in (pola
+  `.menu-arrow`).
+- **Footer raksasa**: cascade per huruf (`staggerChildren`) + wave per huruf
+  saat hover (delay per huruf via `--d`).
+- Semua poin di atas fallback `prefers-reduced-motion` = statis.
 
 ---
 

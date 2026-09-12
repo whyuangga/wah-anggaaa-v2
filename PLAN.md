@@ -599,3 +599,74 @@ yang sudah tidak ada). Reduced branch: overlay keluar dari <section>
 **Verifikasi:** tsc + build bersih; e2e dirombak ke hook `__reel` penuh:
 **55/55 PASS** — termasuk swipe CDP nyata menembus wrap dengan re-anchor
 aktif, 10× swipe nonstop, resume proyek 8, morph ✕ + stagger 6 baris.
+
+## 22. v2.16 — polesan motion & micro-interaction semua halaman (2026-09-12)
+
+**Brief user (3 ronde ask_user):** fokus = poles motion/micro-interaction
+(reel sudah oke); scope = SEMUA halaman; aturan desain = LOCK (paper/ink,
+2 font, tanpa garis, gambar warna penuh). Plan 10 item disetujui "gas semua".
+
+### Implementasi
+1. **Home — roll angka NR & meta** (`Roll` di `WorksHuy.tsx`): nilai baru
+   `.roll-in` dari bawah, lama `.roll-out` ke atas, 0,2s + stagger meta
+   0,04s. Wrapper sengaja `<i class="not-italic">` BUKAN `<span>`: reader
+   e2e memakai `querySelector('span')` (span pertama) &
+   `querySelectorAll('span')[1]` ("/ 11") — dengan wrapper non-span, span
+   pertama selalu nilai baru walau roll berjalan. Nilai lama dibuang dari
+   DOM tepat setelah animasi (260ms+delay).
+2. **Home — hover**: item list `group-hover:translate-x-1` + opacity naik;
+   kartu reel `group-hover:scale-[1.03]` + shadow dalam (transform/shadow
+   saja, layout tak berubah — geometri e2e aman).
+3. **Home — cue `scroll ↓`** memantul SATU kali saat masuk (selesai <±4,5s,
+   sebelum screenshot e2e pertama di 5,2s) + berhenti bila user scroll.
+4. **Aturan determinisme**: roll hanya untuk gesture user. `__reel.setY`
+   (hook e2e) menyet `suppressRollRef` 800ms; intro fling ikut statis
+   (`skipRollRef` di- snapshot saat idx berganti). Alasan: screenshot pertama
+   per halaman di headless bisa menangkap frame lama; transien apa pun saat
+   itu membuat perbandingan byte-identik (B/C suite ekstra) gagal.
+5. **About**: capabilities & colophon stagger per item via variants parent
+   (`staggerChildren`, SATU observer di `<ul>`) + hover translate. Catatan:
+   `whileInView` per-element kecil terbukti tidak konsisten menyala; pola
+   parent-variants dipakai juga untuk cascade footer.
+6. **Case study**: `CountUp` (IntersectionObserver + rAF, ease-out cubic,
+   1,1s; suffix dipertahankan; reduced/non-numerik statis), galeri
+   `group-hover:scale-[1.04]`, prev/next `translate` berlawanan arah.
+7. **Journal**: judul hover translate + panah `→` slide-in memakai ulang CSS
+   `.menu-arrow` (class `menu-item` di TLink baris).
+8. **Footer raksasa**: cascade per huruf (parent `motion.span` variants +
+   `staggerChildren` 0,045) + wave hover per huruf (`--d` per huruf,
+   keyframe `wave-y-kf`). Teks utuh `sr-only` untuk screen reader.
+
+### Verifikasi
+`tsc` bersih (8 error `mobile-check2.mjs` SUDAH ADA di HEAD — file scratch
+rusak, bukan regresi); build ok; **e2e 55/55 + ekstra 16/16 PASS** tanpa
+menyentuh assertion (hanya markup dibuat kompatibel); cek visual: roll
+tertangkap mid-animasi saat wheel user, hover list geser, wave footer naik
+per huruf.
+
+## 23. v2.17 — klik kartu mengintip = spotlight ke tengah (2026-09-12)
+
+**Permintaan user:** klik kartu yang sedang "ngintip" (tetangga miring)
+menjadikannya fokus/spotlight, menggantikan kartu di tengah.
+
+### Implementasi (`WorksHuy.tsx`)
+- Setiap slot NON-aktif kini punya overlay `button` `pointer-events-auto`
+  (`aria-label="fokus: {title}"` — sengaja tanpa kata "proyek" supaya tidak
+  tertangkap selector e2e list `button[aria-label*="proyek"]`). Klik →
+  `jump(j)` = scroll proxy jalur terdekat → kartu berputar melurus ke
+  tengah, index aktif + list + NR/meta ikut berganti (mesin lama, tanpa
+  kode animasi baru).
+- Slot `visibility:hidden` (|d| > PEEK) otomatis tidak menerima pointer →
+  hanya kartu yang terlihat yang bisa di-spotlight.
+- Kartu TENGAH tetap `buka case study …` (perilaku lama, e2e lama hijau).
+- `jump()` dapat fallback reduced-motion: tanpa container proxy,
+  `scrollIntoView` ke stage tujuan di section statis.
+- Hover kartu ngintip kini juga hidup (scale+shadow v2.16) karena overlay
+  memberi pointer-events — sekalian affordance "aku bisa diklik".
+
+### Verifikasi
+E2e +2 assertion baru (57/57): klik `fokus: AELIAN` dari f=0 → aktif "2";
+kartu tengah baru klik → `/works/aelian`. Ekstra 16/16, tsc bersih (error
+`mobile-check2.mjs` pre-existing), build ok, screenshot mid-transition
+menunjukkan kartu ngintip melurus ke tengah sementara kartu lama keluar
+miring.
