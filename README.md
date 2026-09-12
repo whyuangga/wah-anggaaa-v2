@@ -317,7 +317,7 @@ drag-rail), Inspirux (drift), Onoera (ritme intro).
     ├── index.css            → @font-face, token @theme (paper/ink/font), base, .lbl, .text-outline, .md-body
     ├── components/
     │   ├── Intro.tsx        → intro terminal scramble + tirai
-    │   ├── Header.tsx       → header tipis (tanpa border; bg paper saat scroll)
+    │   ├── Header.tsx       → header tipis SELALU transparan (v2.18; tanpa border)
     │   ├── Footer.tsx       → footer raksasa cascade + wave + jam + status studio
     │   ├── WorksHuy.tsx     → works index ala HUYMI: satu layar, scroll = ganti proyek
     │   ├── MenuOverlay.tsx  → menu overlay mobile IDENTIK di semua halaman

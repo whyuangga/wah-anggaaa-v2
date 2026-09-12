@@ -670,3 +670,22 @@ kartu tengah baru klik → `/works/aelian`. Ekstra 16/16, tsc bersih (error
 `mobile-check2.mjs` pre-existing), build ok, screenshot mid-transition
 menunjukkan kartu ngintip melurus ke tengah sementara kartu lama keluar
 miring.
+
+## 24. v2.18 — header semua halaman selalu transparan (2026-09-12)
+
+**Permintaan user:** header di semua halaman transparan seperti halaman
+utama, biar selaras.
+
+### Implementasi (`Header.tsx`)
+- Hapus state `scrolled` + listener scroll + conditional `bg-paper` —
+  header kini `bg-transparent` permanen (fade-in opacity saat mount tetap).
+- Home tidak terdampak (chrome-nya bagian kanvas, memang transparan).
+- Konsekuensi diterima user: konten sub-halaman lewat di bawah link nav
+  saat scroll (tanpa bg solid) — konsisten dengan kanvas home yang
+  chromenya melayang.
+
+### Verifikasi
+Computed `background-color` header = `rgba(0,0,0,0)` setelah scroll 600px
+di /about; screenshot menunjukkan wordmark+nav melayang tanpa bar paper.
+tsc bersih, build ok, e2e 57/57 + ekstra 16/16 (tak ada assertion yang
+memakai bg header). README (Struktur Proyek) disinkronkan.

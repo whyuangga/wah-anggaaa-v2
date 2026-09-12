@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useJakartaTime } from '../hooks/useJakartaTime';
@@ -12,24 +12,15 @@ const LINKS = [
   { to: '/journal', label: 'journal' },
 ];
 
-/**
- * Header tipis: desktop = brand kiri, link + jam kanan (TANPA border —
- * hanya bg paper solid yang fade-in saat scroll). Mobile = HAMBURGER di
- * kiri + overlay layar penuh (MenuOverlay) — konsisten dengan kanvas home.
- */
+/** Header tipis: desktop = brand kiri, link + jam kanan; mobile = HAMBURGER
+    kiri + overlay layar penuh (MenuOverlay). SELALU transparan, tanpa border
+    (v2.18 — selaras dengan kanvas home yang chromenya melayang transparan;
+    bg-paper saat scroll dihapus). */
 export default function Header() {
   const time = useJakartaTime(false);
   const pathname = useLocation().pathname;
   const go = useGo();
-  const [scrolled, setScrolled] = useState(false);
   const [menu, setMenu] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
 
   // Home = satu kanvas HUYMI — chrome-nya sudah jadi bagian kanvas
   // (wordmark + MENU desktop + hamburger sendiri di WorksHuy).
@@ -41,9 +32,7 @@ export default function Header() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.9, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-        className={`fixed inset-x-0 top-0 z-50 transition-colors duration-500 ${
-          scrolled ? 'bg-paper' : 'bg-transparent'
-        }`}
+        className="fixed inset-x-0 top-0 z-50 bg-transparent"
       >
         <nav aria-label="Navigasi utama" className="flex items-center justify-between px-5 md:px-10 py-5">
           {/* mobile: hamburger kiri (ala home) */}
