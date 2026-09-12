@@ -44,7 +44,6 @@ export default function MenuOverlay({
       data-open={open}
     >
       <div className="menu-row flex items-center justify-between px-6 pt-6" style={{ transitionDelay: open ? '40ms' : '0ms' }}>
-        <p className="font-display text-[15px] font-bold uppercase tracking-[0.05em]">WAH:ANGGAAA</p>
         <button
           onClick={onClose}
           aria-label="tutup menu"
@@ -52,6 +51,7 @@ export default function MenuOverlay({
         >
           ×
         </button>
+        <p className="font-display text-[15px] font-bold uppercase tracking-[0.05em]">WAH:ANGGAAA</p>
       </div>
       {/* panah "→" = efek HOVER (slide-in), sama seperti menu desktop */}
       <nav className="mt-16 flex flex-col gap-4 px-6 font-serif text-[38px] leading-tight">

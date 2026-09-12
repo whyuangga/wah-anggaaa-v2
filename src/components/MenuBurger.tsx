@@ -14,6 +14,10 @@ export default function MenuBurger({ open, onToggle, className = '' }: Props) {
     <button
       onClick={onToggle}
       data-open={open}
+      // saat overlay terbuka, burger tertimpa overlay (punya × sendiri) —
+      // sembunyikan dari a11y/fokus agar tidak ada dua "tutup menu".
+      aria-hidden={open}
+      tabIndex={open ? -1 : 0}
       aria-label={open ? 'tutup menu' : 'buka menu'}
       aria-expanded={open}
       className={`flex h-10 w-10 cursor-pointer flex-col items-center justify-center gap-[5px] ${className}`}

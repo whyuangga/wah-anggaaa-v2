@@ -45,7 +45,7 @@ function Shell() {
 
   return (
     <TransitionProvider>
-      <div className="min-h-screen bg-paper text-ink">
+      <div className="min-h-svh bg-paper text-ink">
         {!entered && <Intro onFinish={() => setEntered(true)} />}
         {entered && <Header />}
         <RouteSync />

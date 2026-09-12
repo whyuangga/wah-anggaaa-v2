@@ -283,7 +283,7 @@ export default function WorksHuy() {
       (i + N + 0.5) * itemH()
     ).toFixed(0);
     return (
-      <div className="relative h-svh overflow-hidden">
+      <div className="relative h-lvh overflow-hidden">
         {/* kiri atas: teks vertikal */}
         <div className="absolute left-4 top-20 hidden flex-col items-center gap-3 sm:flex md:left-7 md:top-24">
           <span className="lbl text-ink/60" style={{ writingMode: 'vertical-rl' }}>
@@ -502,13 +502,18 @@ export default function WorksHuy() {
 
   /* ---------- mode normal: halaman diam, container proxy yang di-scroll ---------- */
   return (
-    <section ref={sectionRef} className="relative h-svh overflow-hidden" aria-label="Selected works — scroll untuk ganti proyek (tanpa ujung)">
+    <section ref={sectionRef} className="relative h-dvh overflow-hidden" aria-label="Selected works — scroll untuk ganti proyek (tanpa ujung)">
       <div ref={scrollRef} className="reel-scroll absolute inset-0 overflow-y-scroll overscroll-none">
-        {/* stage sticky = selalu terlihat; satu layar + spacer (REEL_SCREENS−1) */}
-        <div ref={stageRef} className="sticky top-0 h-svh">
+        {/* stage sticky = selalu terlihat; satu layar + spacer (REEL_SCREENS−1).
+            lvh (bukan svh/dvh): stage menempel di tepi atas viewport dan
+            mengisi penuh → saat URL bar mobile menyusut, viewport membesar
+            ke lvh dan stage ikut penuh (svh meninggalkan lubang di bawah,
+            dvh me-reflow saat gesture). svh hanya aman untuk section yang
+            diapit konten — bukan kasus kanvas pinned ini. */}
+        <div ref={stageRef} className="sticky top-0 h-lvh">
           {renderStage(idx, true)}
         </div>
-        <div aria-hidden style={{ height: `${(REEL_SCREENS - 1) * 100}svh` }} />
+        <div aria-hidden style={{ height: `${(REEL_SCREENS - 1) * 100}lvh` }} />
       </div>
       {menuOverlay}
     </section>

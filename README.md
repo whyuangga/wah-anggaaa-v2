@@ -14,9 +14,11 @@
 >      deploy memakai Vercel token yang diberikan owner secara eksplisit.
 >    - ❌ Cara DILARANG: menyalin/memirror kode ke repo v1 supaya Vercel
 >      "menjadi sama" — itu sama dengan menyentuh v1 (pelanggaran aturan 1).
->    - Status per 2026-09-12: project Vercel masih terhubung ke v1 sehingga
->      live menyajikan v1 (dark) **secara sengaja** sampai owner me-relink.
->      JANGAN "memperbaiki" ketidaksesuaian ini lewat repo v1.
+>    - Status per 2026-09-12: project Vercel repo ini adalah
+>      `wah-anggaaa-v2.vercel.app` (auto-deploy dari `main` — inilah yang
+>      harus selalu setara main). Adapun `wah-anggaaa.vercel.app` terhubung
+>      ke repo v1 dan menyajikan v1 (dark) **secara sengaja** sampai owner
+>      me-relink. JANGAN "memperbaiki" ketidaksesuaian ini lewat repo v1.
 > 3. **Deployment resmi v2**: `https://whyuangga.github.io/wah-anggaaa-v2/`
 >    (branch `gh-pages`, build base `/wah-anggaaa-v2/`). Untuk otomasi
 >    (push main → Pages deploy), salin `scripts/deploy-pages.workflow.yml`
@@ -44,6 +46,7 @@ maupun Vercel dari codebase yang sama.
 
 | Platform     | URL                                              |
 | ------------ | ------------------------------------------------ |
+| Vercel (v2)  | `https://wah-anggaaa-v2.vercel.app`              |
 | GitHub Pages | `https://whyuangga.github.io/wah-anggaaa-v2/`    |
 
 > ⚠️ `https://wah-anggaaa.vercel.app` adalah situs **v1 (mode gelap)** yang
