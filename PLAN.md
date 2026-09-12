@@ -506,3 +506,49 @@ context `hasTouch`, 390×740): swipe-up di dekat end tidak mentok & proyek
 berubah; 8× swipe berturut selalu di-wrap 0× nyangkut; swipe-down di pucuk
 menembus (y ≈ loopPx) lalu swipe-up lanjut → proyek 11; desktop wheel-up di
 pucuk → y=9900. Suite penuh 44/44 PASS; tsc + build bersih.
+
+## 20. v2.12 — REBUILD: scroll-proxy ala OCULAR, bukannya akrobatika recenter (2026-09-12)
+
+**Masalah user (v2.11 belum beres):** di HP tetap mentok dua arah.
+
+**Post-mortem:** model "native window-scroll + ScrollTrigger pin + recenter"
+kalah lawan browser: (a) saat gesture touch, browser meng-anchor posisi di
+touchstart dan meng-klamp balik semua `scrollTo` di tengah swipe; (b) di
+y=0 event scroll untuk "scroll up" tidak pernah fires; semua patch
+(touchend recenter, wheel intercept) cuma menutupi sebagian dan sulit
+dibuktikan di perangkat asli.
+
+**Riset referensi (ocular-45z.pages.dev, diminta user):** html & body
+`overflow:hidden`, `scrollY` SELALU 0; ada div `.scrollArea` internal
+(overflow-y: scroll, isi = layar-layar berulang `snap-point`) yang
+merupakan satu-satunya yang di-scroll; render = lerp dari
+`scrollTop / H` lalu **modulo murni** `((p % 3) + 3) % 3`; GSAP tanpa
+ScrollTrigger sama sekali. Kesimpulan: looping "sempurna" = TIDAK ADA
+batas untuk mentok — bukan karena edge-case ditangani, tapi karena
+native scroll dipindah ke container panjang yang tak pernah habis.
+
+**Implementasi (`WorksHuy.tsx`):**
+- ScrollTrigger + pin + tween + SEMUA intercept (wheel/touchend/scroll-
+  recenter) DIHAPUS. Window tidak pernah di-scroll.
+- `.reel-scroll` = container `absolute inset-0 overflow-y-scroll
+  overscroll-none`, isi `REEL_SCREENS = 12×TOTAL = 264` layar (spacer
+  `svh`, tinggi auto-update saat URL bar mobile berubah); stage `sticky
+  top-0 h-svh` sehingga visual tak pernah bergerak; scrollbar CSS-hide.
+- `f = mod(scrollTop/h − REEL_START, TOTAL)`, START = 132 layar → buffer
+  ±6 putaran dua arah. Render tetap mesin lama (slot jarak-modulo,
+  list 4 lipatan) — terbukti identik per putaran, jadi modulo mulus.
+- Snap idle 160ms → `area.scrollTo(k*h, smooth)`; keyboard ↑↓ = k±1
+  (tanpa kasus khusus batas); `jump(i)` = layar ekuivalen terdekat;
+  `goTop()` = scroll ke REEL_START. Resize: scrollTop dikunci ke indeks
+  layar lama. Intro fling tidak berubah (guard `flingingRef`).
+- Hook dev `window.__reel = { f, y, h, screens, start, setY }` (DEV only)
+  dipakai e2e.
+- Klik kartu → case study, chrome, list, overlay: TIDAK berubah; stage
+  kini di dalam container → wheel/tap di atas tombol tetap ter-chain ke
+  container (pernah bug v2.10 di sini — `pointer-events-auto` tetap wajib).
+
+**Verifikasi:** tsc + build bersih. E2E dirombak ke hook `__reel`
+(48 assertion, +14): swipe CDP nyata (hasTouch): 10× swipe nonstop Δ
+6.660px tanpa satu pun mentok; tembus wrap virtual 21→0 mulus; swipe
+½ layar snap balik; swipe ≥1 layar 001→011; `window.scrollY === 0`
+selamanya; desktop 10× wheel → 3,4,5,…,11,1. **48/48 PASS.**

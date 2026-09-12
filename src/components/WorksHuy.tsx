@@ -5,12 +5,9 @@ import {
   type CSSProperties,
 } from 'react';
 import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { WORKS } from '../data/works';
 import { useGo } from '../lib/transition';
 import MenuOverlay from './MenuOverlay';
-
-gsap.registerPlugin(ScrollTrigger);
 
 const N = WORKS.length;
 /** tinggi item list (px) — HARUS sama dengan class `h-[60px] md:h-[84px]` di markup */
@@ -20,6 +17,13 @@ const itemH = () =>
 /* ---------- geometri reel (diukur dari screenshot HUYMI) ---------- */
 const LOOPS = 2; // gulungan penuh 0→…→N per putaran (bolak-balik tanpa ujung)
 const TOTAL = LOOPS * N; // langkah virtual 0..TOTAL; indeks tampil = round(f) mod N
+// Buffer scroll-proxy: 12 putaran layar, mulai di TENGAH (±6 putaran = ±132
+// layar = ±97rb px di 740px) — tepi container tidak akan pernah terjangkau,
+// dan kalaupun sampai, frame-nya identik (render murni modulo) → tak ada
+// yang bisa "mentok". Ini teknik yang sama dg ocular/HUYMI: halaman TIDAK
+// memakai native scroll window sama sekali.
+const REEL_SCREENS = TOTAL * 12;
+const REEL_START = TOTAL * 6;
 const SPACING = 0.55; // jarak antar kartu = 0,55 × tinggi stage (screenshot ±0,55vh)
 const MAXTILT = 5.5; // derajat kemiringan kartu tetangga (tengah = 0°, melurus saat masuk)
 const PEEK = 1.6; // kartu tampil selama |jarak| ≤ PEEK
@@ -48,11 +52,13 @@ function slotAt(j: number, f: number, h: number) {
  * ±5,5° dan melurus saat masuk tengah), list semua proyek di kanan, meta
  * kiri tengah, angka NR. raksasa kiri bawah, SCROLL + dua kotak kanan bawah.
  *
- * Scroll VERTIKAL = reel carousel TANPA UJUNG: pemetaan scroll ke indeks
- * virtual 0→(LOOPS×N), semuanya dihitung dengan jarak-modulo — jadi
- * …010 → 011 → 001 → 002 mulus dua arah, list kanan pun tidak pernah
- * bolong di ujung (dirender 3 lipatan). Snap manual ke tiap proyek;
- * keyboard ↑↓←→ saat pinned; klik list = lompat jalur terdekat.
+ * Scroll VERTIKAL = reel carousel TANPA UJUNG, via SCROLL-PROXY (teknik
+ * ocular/HUYMI): window tidak pernah di-scroll — yang di-scroll adalah
+ * container overflow-y di dalamnya (isi 12 putaran layar, mulai di tengah);
+ * stage `sticky`; render murni JARAK-MODULO atas (scrollTop/h) — jadi
+ * …010 → 011 → 001 → 002 mulus dua arah di mouse, trackpad, touch, dan
+ * keyboard, tanpa satu pun preventDefault/recenter. Snap manual ke tiap
+ * proyek; klik list = lompat jalur terdekat.
  * INTRO FLING (ala huyml.co): saat mount, reel berputar cepat 2 putaran
  * lalu mengendap di proyek 1 (scrub scroll di-guard selama fling).
  * Mobile: kartu reel diperkecil & digeser kiri, list judul TETAP tampil.
@@ -64,8 +70,8 @@ export default function WorksHuy() {
   const slotRefs = useRef<(HTMLDivElement | null)[]>([]);
   const listRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
-  const stRef = useRef<ScrollTrigger | null>(null);
-  const fRef = useRef(0); // indeks virtual saat ini (0..TOTAL)
+  const scrollRef = useRef<HTMLDivElement>(null); // container scroll-proxy
+  const fRef = useRef(0); // indeks virtual saat ini (0..TOTAL, mod)
   const idxRef = useRef(0);
   const flingingRef = useRef(false); // intro fling aktif → scrub scroll dibiarkan
   const [idx, setIdx] = useState(0);
@@ -73,27 +79,31 @@ export default function WorksHuy() {
   const hRef = useRef(900);
   const clipTopRef = useRef(0); // tinggi "clipping" atas reel list (hindari chrome)
 
-  const goTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+  const goTop = () => {
+    const area = scrollRef.current;
+    if (area) area.scrollTo({ top: REEL_START * (hRef.current || 1), behavior: 'smooth' });
+    else window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const reduced =
     typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /** lompat ke proyek i lewat PUTARAN TERDEKAT (tidak pernah rewind jauh) */
   const jump = (i: number) => {
-    const st = stRef.current;
-    if (!st) return;
-    const v = fRef.current;
-    const cands: number[] = [];
-    for (let c = i; c <= TOTAL; c += N) cands.push(c);
-    const k = cands.reduce((a, b) => (Math.abs(b - v) < Math.abs(a - v) ? b : a), i);
-    window.scrollTo({ top: st.start + (st.end - st.start) * (k / TOTAL), behavior: 'smooth' });
+    const area = scrollRef.current;
+    if (!area) return;
+    const h = hRef.current || 1;
+    const k = Math.round(area.scrollTop / h);
+    const base = REEL_START + i;
+    const t = Math.min(REEL_SCREENS, Math.max(0, base + TOTAL * Math.round((k - base) / TOTAL)));
+    area.scrollTo({ top: t * h, behavior: 'smooth' });
   };
 
   useLayoutEffect(() => {
     if (reduced) return;
-    const section = sectionRef.current;
     const stage = stageRef.current;
-    if (!section || !stage) return;
+    const area = scrollRef.current;
+    if (!stage || !area) return;
 
     const measure = () => {
       hRef.current = stage.clientHeight || window.innerHeight;
@@ -127,33 +137,38 @@ export default function WorksHuy() {
       }
     };
 
-    const proxy = { f: 0 };
-    const tween = gsap.to(proxy, {
-      f: TOTAL,
-      ease: 'none',
-      scrollTrigger: {
-        trigger: section,
-        start: 'top top',
-        end: () => `+=${TOTAL * hRef.current}`,
-        pin: true,
-        scrub: 0.6,
-        anticipatePin: 1,
-        invalidateOnRefresh: true,
-        // NB: ScrollTrigger `snap` bawaan tidak stabil di setup ini (meleset
-        // beberapa langkah) → snap manual via listener scroll-idle di bawah.
-        onUpdate: (self) => {
-          if (flingingRef.current) return; // fling intro pegang kendali
-          fRef.current = self.progress * TOTAL;
-          apply(fRef.current);
-        },
-      },
-    });
-    stRef.current = tween.scrollTrigger as ScrollTrigger;
+    // ————— VIRTUAL SCROLL ala ocular/HUYMI —————
+    // Window TIDAK pernah di-scroll. Yang di-scroll adalah container
+    // `.reel-scroll` (overflow-y: scroll, isi 264 layar) dan stage-nya
+    // `sticky` — jadi visual selalu di tempat sementara scrollTop bebas
+    // bergerak. f = (scrollTop/h − REEL_START) mod TOTAL. Wheel, sentuhan,
+    // momentum, dan keyboard semuanya NATIVE di dalam container → tidak ada
+    // preventDefault, tidak ada recenter, tidak ada gesture yang dicuri
+    // browser. Looping dijamin modulo + buffer, bukan oleh akrobatika.
+    area.scrollTop = REEL_START * (hRef.current || 1);
+    const fFromScroll = () => mod(area.scrollTop / (hRef.current || 1) - REEL_START, TOTAL);
     apply(0);
+
+    let idleTimer: number | undefined;
+    const onScroll = () => {
+      if (!flingingRef.current) {
+        fRef.current = fFromScroll();
+        apply(fRef.current);
+      }
+      // snap manual: scroll berhenti ±160ms → geser halus ke layar terdekat
+      window.clearTimeout(idleTimer);
+      idleTimer = window.setTimeout(() => {
+        const h = hRef.current || 1;
+        const k = Math.min(REEL_SCREENS, Math.max(0, Math.round(area.scrollTop / h)));
+        if (Math.abs(area.scrollTop / h - k) > 0.002) {
+          area.scrollTo({ top: k * h, behavior: 'smooth' });
+        }
+      }, 160);
+    };
+    area.addEventListener('scroll', onScroll, { passive: true });
 
     // INTRO FLING ala HUYMI: begitu konten muncul, reel berputar cepat
     // (2 putaran penuh menyapu semua proyek) lalu mengendap di proyek 001.
-    // List & angka ikut berputar karena satu sumbu `apply(f)`.
     const flingObj = { f: TOTAL };
     flingingRef.current = true;
     fRef.current = TOTAL;
@@ -165,147 +180,53 @@ export default function WorksHuy() {
       onUpdate: () => apply(flingObj.f),
       onComplete: () => {
         flingingRef.current = false;
-        // sinkronkan dengan posisi scroll SESUNGGUHNYA (bukan hardcode 0) —
-        // kalau user scroll saat fling, view lanjut dari posisi itu, mulus
-        const st = stRef.current;
-        apply(st ? st.progress * TOTAL : 0);
+        // sinkronkan dengan posisi scroll SESUNGGUHNYA (kalau user scroll
+        // saat fling, view lanjut dari posisi itu, mulus)
+        fRef.current = fFromScroll();
+        apply(fRef.current);
       },
     });
 
     const onKey = (e: KeyboardEvent) => {
-      const st = stRef.current;
-      if (!st || !st.isActive) return;
       const down = e.key === 'ArrowRight' || e.key === 'ArrowDown';
       const up = e.key === 'ArrowLeft' || e.key === 'ArrowUp';
       if (!down && !up) return;
       e.preventDefault();
-      const yFor = (v: number) => st.start + (st.end - st.start) * (v / TOTAL);
-      let fv = fRef.current;
-      // di ujung range: pindah DULU satu putaran (frame identik — tak terlihat)
-      // lalu langkah halus normal; keyboard pun ikut loop tanpa rewind
-      if (down && fv >= TOTAL - 0.5) {
-        window.scrollTo(0, yFor(fv - N));
-        fv -= N;
-      } else if (up && fv <= 0.5) {
-        window.scrollTo(0, yFor(fv + N));
-        fv += N;
-      }
-      const nv = Math.min(TOTAL, Math.max(0, Math.round(fv) + (down ? 1 : -1)));
-      window.scrollTo({ top: yFor(nv), behavior: 'smooth' });
+      const h = hRef.current || 1;
+      const k = Math.round(area.scrollTop / h) + (down ? 1 : -1);
+      area.scrollTo({ top: Math.min(REEL_SCREENS, Math.max(0, k)) * h, behavior: 'smooth' });
     };
     const onResize = () => {
+      const oldH = hRef.current || 1;
       measure();
+      // kunci indeks layar agar posisi relatif tidak bergeser saat h berubah
+      area.scrollTop = Math.round(area.scrollTop / oldH) * (hRef.current || 1);
+      fRef.current = fFromScroll();
       apply(fRef.current);
-      ScrollTrigger.refresh();
     };
     window.addEventListener('keydown', onKey);
     window.addEventListener('resize', onResize);
 
-    // LOOP TANPA UJUNG, dua arah (desktop + mobile):
-    // Render di f dan f±N IDENTIK (semua posisi berbasis modulo; list
-    // 4 lipatan) → tiap kali menempel batas, posisi digeser persis SATU
-    // putaran penuh; pemindahan tak bisa terlihat. Tiga jalur recenter:
-    //  a) `scroll` — dasar: unconditional (mobile clamp membuat y == lastY,
-    //     guard "arah" versi lama tidak pernah true → itu bug mentok);
-    //     puncak: saat tiba dengan scroll MENURUN → maju satu putaran
-    //     (scroll-up di y=0 tak mungkin fire event, jadi pakai jalur b/c).
-    //  b) `wheel` — di batas, preventDefault + posisi = (batas −/+ loopPx)
-    //     + delta ter-clamp; ini yang bikin trackpad/mouse tidak nyangkut,
-    //     dan membuat scroll-ATAS dari 001 tembus ke 011.
-    //  c) `touchend` — gesture touch tidak bisa di-recenter di tengah
-    //     (anchor browser meng-klamp balik), jadi begitu jari angkat:
-    //     kalau posisi di batas DAN arah gesek mau keluar → geser 1 putaran.
-    // Momentum/fling pasca-touchend ikut di-normalize listener snap idle.
-    let lastY = window.scrollY;
-    const edge = () => {
-      const st = stRef.current;
-      if (!st || flingingRef.current) return null;
-      return { st, loopPx: (st.end - st.start) / LOOPS };
-    };
-    const onScrollWrap = () => {
-      const e = edge();
-      const y = window.scrollY;
-      if (e) {
-        if (y >= e.st.end - 0.5) {
-          window.scrollTo(0, y - e.loopPx);
-        } else if (y <= e.st.start + 0.5 && y < lastY) {
-          window.scrollTo(0, y + e.loopPx);
-        }
-      }
-      lastY = y;
-    };
-    window.addEventListener('scroll', onScrollWrap, { passive: true });
-
-    const onWheel = (e: WheelEvent) => {
-      const ed = edge();
-      if (!ed || !ed.st.isActive) return;
-      const d = Math.max(-hRef.current * 0.8, Math.min(e.deltaY, hRef.current * 0.8));
-      if (!d) return;
-      const y = window.scrollY;
-      if (d > 0 && y >= ed.st.end - 1.5) {
-        e.preventDefault();
-        window.scrollTo(0, ed.st.end - ed.loopPx + d);
-      } else if (d < 0 && y <= ed.st.start + 1.5) {
-        e.preventDefault();
-        window.scrollTo(0, ed.st.start + ed.loopPx + d);
-      }
-    };
-    window.addEventListener('wheel', onWheel, { passive: false });
-
-    let touchAnchor: { y: number } | null = null;
-    const onTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 1) touchAnchor = { y: e.touches[0].clientY };
-    };
-    const onTouchEnd = (e: TouchEvent) => {
-      const ed = edge();
-      const a = touchAnchor;
-      touchAnchor = null;
-      if (!ed || !a) return;
-      const endY = e.changedTouches[0]?.clientY ?? a.y;
-      const dy = a.y - endY; // >0: jari naik = lanjut ke bawah; <0: sebaliknya
-      const y = window.scrollY;
-      if (y >= ed.st.end - 1.5 && dy > 0) {
-        window.scrollTo(0, y - ed.loopPx);
-      } else if (y <= ed.st.start + 1.5 && dy < 0) {
-        window.scrollTo(0, y + ed.loopPx);
-      }
-    };
-    window.addEventListener('touchstart', onTouchStart, { passive: true });
-    window.addEventListener('touchend', onTouchEnd, { passive: true });
-
-    // snap manual: scroll berhenti ±160ms → geser halus ke langkah terdekat
-    let idleTimer: number | undefined;
-    const onScroll = () => {
-      window.clearTimeout(idleTimer);
-      idleTimer = window.setTimeout(() => {
-        const st = stRef.current;
-        if (!st || !st.isActive) return;
-        const step = 1 / TOTAL;
-        const nearest = Math.min(1, Math.max(0, Math.round(st.progress / step) * step));
-        if (Math.abs(nearest - st.progress) > 0.002) {
-          window.scrollTo({
-            top: st.start + (st.end - st.start) * nearest,
-            behavior: 'smooth',
-          });
-        }
-      }, 160);
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
+    if (import.meta.env.DEV) {
+      (window as unknown as Record<string, unknown>).__reel = {
+        f: () => fRef.current,
+        y: () => area.scrollTop,
+        h: () => hRef.current,
+        screens: REEL_SCREENS,
+        start: REEL_START,
+        setY: (v: number) => {
+          area.scrollTop = v;
+        },
+      };
+    }
 
     return () => {
       window.clearTimeout(idleTimer);
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('resize', onResize);
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('scroll', onScrollWrap);
-      window.removeEventListener('wheel', onWheel);
-      window.removeEventListener('touchstart', onTouchStart);
-      window.removeEventListener('touchend', onTouchEnd);
-      tween.scrollTrigger?.kill();
-      tween.kill();
+      area.removeEventListener('scroll', onScroll);
       fling.kill();
       flingingRef.current = false;
-      stRef.current = null;
     };
   }, [reduced]);
 
@@ -541,10 +462,16 @@ export default function WorksHuy() {
     );
   }
 
-  /* ---------- mode normal: satu layar, scroll = gonta-ganti proyek ---------- */
+  /* ---------- mode normal: halaman diam, container proxy yang di-scroll ---------- */
   return (
-    <section ref={sectionRef} className="relative" aria-label="Selected works — scroll untuk ganti proyek (tanpa ujung)">
-      <div ref={stageRef}>{renderStage(idx, true)}</div>
+    <section ref={sectionRef} className="relative h-svh overflow-hidden" aria-label="Selected works — scroll untuk ganti proyek (tanpa ujung)">
+      <div ref={scrollRef} className="reel-scroll absolute inset-0 overflow-y-scroll overscroll-none">
+        {/* stage sticky = selalu terlihat; satu layar + spacer (REEL_SCREENS−1) */}
+        <div ref={stageRef} className="sticky top-0 h-svh">
+          {renderStage(idx, true)}
+        </div>
+        <div aria-hidden style={{ height: `${(REEL_SCREENS - 1) * 100}svh` }} />
+      </div>
       {menuOverlay}
     </section>
   );

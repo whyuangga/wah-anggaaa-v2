@@ -174,3 +174,15 @@ body {
   opacity: 1;
   translate: 0 0;
 }
+
+/* home reel: scroll-proxy container — scrollbar disembunyikan,
+   gesture native (wheel/touch/momentum) yang jalan, bukan window */
+.reel-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.reel-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}

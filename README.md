@@ -65,16 +65,17 @@ header ala HUYMI**:
   aktif di tengah tegak 0°, sebelumnya ngintip di atas & berikutnya di
   bawah (miring ±5,5°, melurus saat masuk tengah), jarak antar kartu
   0,55×tinggi stage; bergerak bersama scroll (bukan crossfade tumpuk)
-- **looping tanpa ujung yang SESUNGGUHNYA tanpa ujung (desktop & touch)**:
-  scroll dipetakan ke indeks virtual 2 putaran (0→22) dengan **jarak-modulo**
-  — …010 → 011 → 001 → 002 mulus dua arah; menyenggol batas mana pun
-  menggeser posisi persis satu putaran (frame identik → tak terlihat) via
-  tiga jalur: listener `scroll` (recenter unconditional di dasar),
-  `wheel` (cegat + reposition, dua sisi), dan `touchend` (arah-aware —
-  karena browser meng-klamp scroll anchor di TENGAH gesture, recenter di
-  tengah swipe tidak mungkin; dilakukan saat jari angkat). Pin tidak
-  pernah lepas; `overscroll-behavior-y: none` mencegah pull-to-refresh
-  mencuri gesture di batas
+- **looping tanpa ujung SESUNGGUHNYA — via SCROLL-PROXY (teknik ocular)**:
+  window tidak pernah di-scroll; di dalamnya ada container `overflow-y`
+  tak terlihat berisi 12 putaran layar (264 × 100svh), stage `sticky`, dan
+  render = `scrollTop/h − START` dimodulo — …010 → 011 → 001 → 002 mulus
+  dua arah di MOUSE, TRACKPAD, TOUCH, dan KEYBOARD. Tidak ada satu pun
+  preventDefault/recenter/touchend-hack: wheel & sentuhan menggerakkan
+  container secara NATIVE (momentum ikut native), tepi buffer ±6 putaran
+  tidak terjangkau → mustahil mentok; scroll-idle 160ms snap ke layar
+  terdekat. Scrollbar disembunyikan (`.reel-scroll`)
+- `overscroll-behavior-y: none` di html: pull-to-refresh tidak mencuri
+
 - **klik kartu aktif → case study** (overlay button di slot tengah;
   `pointer-events-auto` wajib karena container reel `pointer-events-none`)
 - **list semua proyek** di kanan (kategori kecil + nama serif + blurb) —

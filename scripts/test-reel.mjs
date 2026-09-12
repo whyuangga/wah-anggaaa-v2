@@ -25,15 +25,16 @@ async function fresh(reducedMotion, waitMs = 5200) {
 /* ================= DESKTOP (post-fling) ================= */
 const { page, errs } = await fresh('no-preference');
 const geo = await page.evaluate(() => {
-  const sec = document.querySelector('section[aria-label^="Selected works"]');
-  const r = sec.getBoundingClientRect();
-  return { top: window.scrollY + r.top, h: sec.querySelector(':scope > div').clientHeight };
+  const r = window.__reel;
+  if (!r) throw new Error('__reel hook tidak ada (dev mode?)');
+  return { top: 0, h: r.h(), start: r.start, screens: r.screens };
 });
-const Y = (f) => geo.top + f * geo.h;
-const scrollToF = async (f, settleMs = 90) => {
-  await page.evaluate((y) => window.scrollTo({ top: y, behavior: 'auto' }), Y(f));
+const Y = (f) => (geo.start + f) * geo.h; // scrollTop container, bukan window
+const scrollToF = async (f, settleMs = 140) => {
+  await page.evaluate((y) => window.__reel.setY(y), Y(f));
   await page.waitForTimeout(settleMs);
 };
+const winScroll = () => page.evaluate(() => window.scrollY);
 const state = () =>
   page.evaluate(({ W, H }) => {
     const sec = document.querySelector('section[aria-label^="Selected works"]');
@@ -111,8 +112,9 @@ await page.evaluate((n) => {
 await page.waitForTimeout(1800);
 s = await state();
 ok('klik 11 dari 2 → jalur terdekat', s.activeNo === '11', s.activeNo);
-const yAfter = await page.evaluate(() => window.scrollY);
-ok('lompat = mundur 2 langkah (bukan maju 9)', Math.abs(yAfter - Y(10)) < 30, `y=${(yAfter - geo.top).toFixed(0)}`);
+const yAfter = await page.evaluate(() => window.__reel.y());
+ok('lompat = mundur 2 langkah (bukan maju 9)', Math.abs(yAfter - Y(10)) < 30, `y=${yAfter.toFixed(0)} vs ${Y(10)}`);
+ok('window TIDAK pernah scroll (model proxy)', (await winScroll()) === 0);
 
 // ---- 4b. klik kartu tengah → case study ----
 await scrollToF(0, 40);
@@ -142,44 +144,39 @@ await page.goBack({ waitUntil: 'networkidle' }).catch(() => {});
 await page.waitForSelector('section[aria-label^="Selected works"]', { timeout: 20000 });
 await page.waitForTimeout(2600); // fling ulang di home → tunggu settle penuh
 
-// ---- 4c. desktop: wheel-UP di pucuk (y=0) harus menembus ke 011 ----
+// ---- 4c. desktop: wheel-UP di 001 → buffer menyerap, proyek mundur ----
 await scrollToF(0);
 await page.waitForTimeout(1100);
-await page.mouse.wheel(0, -140);
-await page.waitForTimeout(400);
-const topWheel = await page.evaluate(() => window.scrollY);
-ok('wheel-up di pucuk menembus loop (naik satu putaran)', topWheel > geo.h * (N - 1.5), `y=${topWheel.toFixed(0)}`);
+await page.mouse.move(640, 400);
+await page.mouse.wheel(0, -900);
+await page.waitForTimeout(500);
+s = await state();
+ok('wheel-up di 001 → 011 (tidak mentok di pucuk)', s.activeNo === '11', s.activeNo);
 
-// ---- 5. ujung + error ----
+// ---- 5. dua arah tanpa batas + error ----
 await scrollToF(TOTAL);
 s = await state();
 ok('f=22 → 1 lagi', s.activeNo === '1', s.activeNo);
-// di ujung bawah: posisi harus DIRECENTRE satu putaran (identik visual) —
-// bukan lepas pin / mentok
-await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'auto' }));
+const yMaxCheck = await page.evaluate(() => ({ y: window.__reel.y(), screens: window.__reel.screens, h: window.__reel.h() }));
+ok('posisi jauh dari tepi container (buffer, bukan recenter)', yMaxCheck.y < (yMaxCheck.screens - 5) * yMaxCheck.h, `y=${(yMaxCheck.y / yMaxCheck.h).toFixed(1)} dari ${yMaxCheck.screens} layar`);
+// wheel-down menembus batas virtual 22 → lanjut muter, tanpa clamp
+await page.mouse.wheel(0, 900);
 await page.waitForTimeout(500);
-const wrapTest = await page.evaluate(({ end, start, loopPx }) => {
-  const y = window.scrollY;
-  return { y, nearRecenter: Math.abs(y - (end - loopPx)) < 4 };
-}, { end: Y(TOTAL), start: geo.top, loopPx: geo.h * N });
-ok('ujung bawah: auto-recenter satu putaran (bukan mentok)', wrapTest.nearRecenter, `y=${(wrapTest.y - geo.top).toFixed(0)} vs ${N * geo.h}`);
-// wheel-down di dasar → tembus, lanjut muter (bukan mentok)
-await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'auto' }));
-await page.waitForTimeout(260);
-await page.evaluate(() => {
-  window.dispatchEvent(new WheelEvent('wheel', { deltaY: 140, cancelable: true, bubbles: true }));
-});
-await page.waitForTimeout(160);
-const afterWheel = await page.evaluate(({ end, loopPx }) => ({
-  y: window.scrollY,
-  moved: window.scrollY < end - loopPx * 0.5 && window.scrollY > end - loopPx - 200,
-}), { end: Y(TOTAL), loopPx: geo.h * N });
-ok('wheel-down di dasar menembus loop (lanjut muter)', afterWheel.moved, `y=${(afterWheel.y - geo.top).toFixed(0)}`);
-// ArrowDown di ujung pun harus lanjut ke 002, bukan diam
+s = await state();
+ok('wheel-down menembus loop (lanjut muter)', s.activeNo === '2', s.activeNo);
+// 10× wheel penuh nonstop → angka berputar terus, tidak pernah nyangkut
+const seen = [];
+for (let i = 0; i < 10; i++) {
+  await page.mouse.wheel(0, 950);
+  await page.waitForTimeout(340);
+  seen.push((await state()).activeNo);
+}
+ok('10× wheel nonstop → tidak ada yang mentok (semua berganti)', new Set(seen).size >= 8, seen.join(','));
+// ArrowDown pun lanjut
 await page.keyboard.press('ArrowDown');
 await page.waitForTimeout(1600);
 const sEnd = await state();
-ok('ArrowDown di ujung → lanjut (bukan stuck)', ['2'].includes(sEnd.activeNo), sEnd.activeNo);
+ok('ArrowDown → lanjut (bukan stuck)', !['', null].includes(sEnd.activeNo), sEnd.activeNo);
 ok('desktop: tanpa error', errs.length === 0, errs.join(' | '));
 
 // screenshot
@@ -224,11 +221,10 @@ await page.close();
   await m.goto(URL, { waitUntil: 'networkidle' });
   await m.waitForTimeout(5200);
   const mg = await m.evaluate(() => {
-    const sec = document.querySelector('section[aria-label^="Selected works"]');
-    const r = sec.getBoundingClientRect();
-    return { top: scrollY + r.top, h: sec.querySelector(':scope > div').clientHeight, vw: innerWidth, docW: document.documentElement.scrollWidth };
+    const r = window.__reel;
+    return { top: 0, h: r.h(), start: r.start, vw: innerWidth, docW: document.documentElement.scrollWidth };
   });
-  await m.evaluate((y) => window.scrollTo({ top: y, behavior: 'auto' }), mg.top);
+  await m.evaluate((y) => window.__reel.setY(y), mg.start * mg.h);
   await m.waitForTimeout(400);
   const mstate = await m.evaluate(({ W }) => {
     const st = document.querySelector('section[aria-label^="Selected works"] > div > div');
@@ -251,7 +247,7 @@ await page.close();
   ok('mobile: kartu kecil (≤48vw)', mstate.cardW <= MOBILE_W * 0.48 + 2, `${mstate.cardW.toFixed(0)}px`);
   ok('mobile: angka = "1" tanpa zero-pad', mstate.activeNo === '1', mstate.activeNo);
   ok('mobile: hit-test list = button proyek', mstate.hit !== null, mstate.hit);
-  await m.evaluate((y) => window.scrollTo({ top: y, behavior: 'auto' }), mg.top + 11 * mg.h);
+  await m.evaluate((y) => window.__reel.setY(y), (mg.start + 11) * mg.h);
   await m.waitForTimeout(400);
   const wrapNo = await m.evaluate(() => {
     const st = document.querySelector('section[aria-label^="Selected works"] > div > div');
@@ -260,7 +256,7 @@ await page.close();
   });
   ok('mobile: wrap tetap jalan (f=11 → 1)', wrapNo === '1', wrapNo);
   ok('mobile: tanpa overflow horizontal', mg.docW <= mg.vw + 1, `doc=${mg.docW}`);
-  await m.evaluate((y) => window.scrollTo({ top: y, behavior: 'auto' }), mg.top + 3 * mg.h);
+  await m.evaluate((y) => window.__reel.setY(y), (mg.start + 3) * mg.h);
   await m.waitForTimeout(500);
   await m.screenshot({ path: SHOTS + '/09-mobile-labels.png' });
   ok('mobile: tanpa error', em.length === 0, em.join(' | '));
@@ -291,7 +287,7 @@ await page.close();
   await a.close();
 }
 
-/* ================= MOBILE TOUCH — swipe sejati (CDP) ================= */
+/* ================= MOBILE TOUCH — swipe sejati (CDP), model proxy ================= */
 {
   const ctx = await browser.newContext({ viewport: { width: MOBILE_W, height: MOBILE_H }, hasTouch: true });
   const tpage = await ctx.newPage();
@@ -299,12 +295,9 @@ await page.close();
   tpage.on('pageerror', (e) => terrs.push(String(e)));
   await tpage.goto(URL, { waitUntil: 'networkidle' });
   await tpage.waitForTimeout(5200);
-  const tg = await tpage.evaluate(() => {
-    const sec = document.querySelector('section[aria-label^="Selected works"]');
-    const r = sec.getBoundingClientRect();
-    return { top: scrollY + r.top, h: sec.querySelector(':scope > div').clientHeight };
-  });
-  const TY = (f) => tg.top + f * tg.h;
+  const tg = await tpage.evaluate(() => ({ h: window.__reel.h(), start: window.__reel.start, screens: window.__reel.screens, winScrollY: window.scrollY }));
+  ok('touch: window tidak dipakai untuk scroll (proxy container)', tg.winScrollY === 0);
+  const TY = (f) => (tg.start + f) * tg.h;
   const cdp = await ctx.newCDPSession(tpage);
   const swipe = async (fromY, toY, steps = 10, x = 195) => {
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y: fromY }] });
@@ -315,49 +308,35 @@ await page.close();
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     await new Promise((r) => setTimeout(r, 700));
   };
+  const getY = () => tpage.evaluate(() => window.__reel.y());
   const getNo = () =>
     tpage.evaluate(() => {
       const el = [...document.querySelectorAll('p')].find((p) => p.textContent.trim() === 'nr.');
-      return {
-        no: el?.nextElementSibling?.querySelector('span')?.textContent?.trim(),
-        y: window.scrollY,
-      };
+      return el?.nextElementSibling?.querySelector('span')?.textContent?.trim() ?? null;
     });
 
-  // (a) swipe UP (jari naik = scroll ke bawah) berulang dari dekat batas bawah → jangan mentok
-  await tpage.evaluate((y) => window.scrollTo(0, y), TY(TOTAL - 1.2));
+  // (a) menembus batas virtual f=22: swipe panjang dari dekat 22 → wrap ke 001
+  await tpage.evaluate((y) => window.__reel.setY(y), TY(21));
   await tpage.waitForTimeout(250);
-  let before = await getNo();
-  await swipe(600, 240); // 360px naik → snap mundur? (kurang dari 1 langkah) → pakai swipe panjang
-  await swipe(600, -380); // 980px ≈ > 1 langkah → maju
-  let after = await getNo();
-  ok('touch: swipe-up dekat batas bawah TIDAK mentok (posisi < end)', after.y < TY(TOTAL) - 5, `y=${(after.y - tg.top).toFixed(0)} vs end=${(TY(TOTAL) - tg.top).toFixed(0)}`);
-  ok('touch: swipe-up lanjut muter (proyek berubah)', before.no !== after.no, `${before.no} → ${after.no}`);
+  await swipe(650, -350); // jari naik ±1000px = >1 layar
+  ok('touch: swipe menembus batas virtual → wrap mulus', (await getNo()) === '1', String(await getNo()));
+  ok('touch: scrollTop lanjut (tidak clamp di tepi)', (await getY()) > TY(21) + 500, String(await getY()));
 
-  // (b) 8 swipe panjang terus-menerus ke bawah: tidak pernah nyangkut di end
-  let stuck = false;
-  for (let i = 0; i < 8; i++) {
-    await tpage.evaluate((y) => window.scrollTo(0, y), TY(TOTAL - 0.3));
-    await tpage.waitForTimeout(120);
-    await swipe(650, -350);
-    const st = await tpage.evaluate(() => window.scrollY);
-    if (st >= TY(TOTAL) - 1) stuck = true;
-  }
-  ok('touch: 8× swipe ke batas bawah selalu di-wrap (0× nyangkut)', !stuck);
+  // (b) 10 swipe panjang nonstop ke bawah: tidak pernah mentok di mana pun
+  const ys = [];
+  for (let i = 0; i < 10; i++) { await swipe(650, -350); ys.push(await getY()); }
+  const strictlyMoving = ys.every((y, k) => k === 0 || y > ys[k - 1] + 300);
+  ok('touch: 10× swipe nonstop → selalu bergerak (0× mentok)', strictlyMoving, `Δ=${(ys[9] - ys[0]).toFixed(0)}px`);
+  const withinBuffer = ys.every((y) => y > 0 && y < tg.screens * tg.h - tg.h);
+  ok('touch: semua posisi masih di tengah buffer', withinBuffer);
 
-  // (c) swipe DOWN di pucuk (scroll ke atas dari 001) → tembus ke 011
-  await tpage.evaluate(() => window.scrollTo(0, 0));
-  await tpage.waitForTimeout(300);
-  await swipe(240, 700); // 460px turun → touchend di y<=start → maju 1 putaran
-  let topState = await getNo();
-  const landedWrap = topState.y > tg.h * (N - 1.5) && topState.y < tg.h * (N + 1.5);
-  ok('touch: swipe-down di pucuk menembus loop (naik ke 011)', landedWrap, `y=${(topState.y - tg.top).toFixed(0)} ≈ ${N * tg.h}`);
-  // lanjutkan swipe ke ARAH ATAS reel (jari turun = scroll naik) → 001 → 011
-  await tpage.evaluate((y) => window.scrollTo(0, y), TY(N - 0.05)); // settle di 001 hasil wrap
-  await tpage.waitForTimeout(400);
-  await swipe(240, 700); // jari turun 460px → f turun ~0.6 langkah → snap ke 10 → 011
-  topState = await getNo();
-  ok('touch: dari 001 lanjut swipe-up → proyek 11', topState.no === '11', `${topState.no} @y=${(topState.y - tg.top).toFixed(0)}`);
+  // (c) swipe-down (mundur) dari 001: menembus ke 011 — dua arah
+  await tpage.evaluate((y) => window.__reel.setY(y), TY(0));
+  await tpage.waitForTimeout(250);
+  await swipe(300, 600); // jari turun 300px = 0,4 layar (< ½) → snap BALIK ke 001
+  ok('touch: swipe-down <½ layar → snap balik 001 (bukan nyangkut)', (await getNo()) === '1' && Math.abs((await getY()) - TY(0)) < 4, String(await getY()));
+  await swipe(120, 920); // 800px = 1,08 layar → mundur persis 1 → 011
+  ok('touch: swipe-down ≥1 layar dari 001 → 011', (await getNo()) === '11', String(await getNo()));
   await tpage.screenshot({ path: SHOTS + '/12-mobile-touch.png' });
   ok('touch: tanpa page error', terrs.length === 0, terrs.join(' | '));
   await ctx.close();
