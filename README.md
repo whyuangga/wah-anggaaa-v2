@@ -20,8 +20,11 @@ maupun Vercel dari codebase yang sama.
 
 | Platform     | URL                                              |
 | ------------ | ------------------------------------------------ |
-| Vercel       | `https://wah-anggaaa.vercel.app`                 |
 | GitHub Pages | `https://whyuangga.github.io/wah-anggaaa-v2/`    |
+
+> ⚠️ `https://wah-anggaaa.vercel.app` adalah situs **v1 (mode gelap)** yang
+> di-deploy dari repo TERPISAH `whyuangga/wah-anggaaa` — bukan dari repo ini.
+> Repo v1 tidak boleh dimodifikasi dari proyek ini.
 
 ---
 

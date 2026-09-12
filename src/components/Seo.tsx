@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
 /** domain kanonis — samakan dengan index.html, sitemap, robots */
-export const SITE_URL = 'https://wah-anggaaa.vercel.app';
+export const SITE_URL = 'https://whyuangga.github.io/wah-anggaaa-v2';
 export const SITE_NAME = 'wahanggaaa®';
 
 const DEFAULT_DESC =

@@ -1,7 +1,7 @@
 /** prebuild: hasilkan public/sitemap.xml dari route statis + karya + jurnal. */
 import fs from 'fs';
 
-const SITE = 'https://wah-anggaaa.vercel.app';
+const SITE = 'https://whyuangga.github.io/wah-anggaaa-v2';
 const today = new Date().toISOString().slice(0, 10);
 
 const worksSrc = fs.readFileSync('src/data/works.ts', 'utf8');
