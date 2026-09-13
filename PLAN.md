@@ -719,3 +719,39 @@ hanya `translate` untuk hover. Stabil 4× 16/16 sesudahnya.
 tsc bersih (mobile-check2.mjs pre-existing), build ok, e2e 57/57 + ekstra
 16/16 (4 run beruntun), screenshot wordmark baru dikonfirmasi user-facing.
 README (fitur home) + PLAN disinkronkan.
+
+## 26. v2.20 — wordmark pakai asset logo, bar vertikal menu dihapus (2026-09-13)
+
+User dapat asset logo (PNG hitam-pekat, monogram "W•") dan minta wordmark
+terminal prompt v2.19 **diganti asset** itu, sekalian **garis vertikal
+hitam** di samping list menu desktop dihapus.
+
+### Ekstraksi asset (`public/images/logo-wa.png`)
+
+Asset sumber dark-on-dark: fill logo == warna background hitam, jadi isi
+tak bisa direcover lewat luminance biasa — yang tertangkap hanya outline
+putus-putus. Resep akhirnya: alpha = max(luminance, interior-255), dengan
+interior dihitung lewat **dilate edge R=3 lalu BFS dari luar**; pixel yang
+tak terjangkau BFS = interior → alpha 255. Hasil: monogram solid tinta
+(13,13,12) + alpha, 479×131, bbox sumber (643,369)-(1113,491) + pad 4.
+Diverifikasi visual di atas kertas via preview komposit.
+
+### Implementasi (`WorksHuy.tsx`, `index.css`)
+
+- `const BASE = import.meta.env.BASE_URL` (path aman di bawah subpath).
+- Tombol wordmark desktop = `<img src={BASE+'images/logo-wa.png'}>`
+  `h-[26px] w-auto`, `alt=""` + `aria-label` di tombol, `goTop` onClick,
+  hover `opacity-70` saja (sesuai aturan: animasi transform/opacity).
+- Blok menu desktop: span bar hitam vertikal + wrapper `flex items-start
+  gap-3.5` dihapus — menu kini satu kolom teks saja.
+- `index.css`: keyframes `cursor-blink` + rule `.wm-cursor` dihapus
+  (motif kedip intro tetap punya mekanisme sendiri di Intro).
+- Mobile tidak disentuh (user sudah puas).
+
+### Verifikasi
+
+- `npx tsc --noEmit` bersih (kecuali 8 error lama `mobile-check2.mjs`).
+- e2e utama **57/57** + suite tambahan **16/16** dua run berturut-turut
+  (C1/C3 byte-equal — chrome home bebas transisi warna baru).
+- `npm run build` ✔. Screenshot headless: logo solid kiri-atas, bar
+  vertikal gone, layout menu utuh.

@@ -12,6 +12,7 @@ import MenuOverlay from './MenuOverlay';
 import MenuBurger from './MenuBurger';
 
 const N = WORKS.length;
+const BASE = import.meta.env.BASE_URL;
 /** tinggi item list (px) — HARUS sama dengan class `h-[60px] md:h-[84px]` di markup */
 const itemH = () =>
   typeof window !== 'undefined' && window.innerWidth < 768 ? 60 : 84;
@@ -363,30 +364,25 @@ export default function WorksHuy() {
     ).toFixed(0);
     return (
       <div className="relative h-lvh overflow-hidden">
-        {/* chrome — wordmark kiri-atas (v2.19): TERMINAL PROMPT, tanpa asset.
-            lowercase + kursor blok statis (motif kedip ada di intro; di sini
-            kedip hanya saat hover/focus → frame e2e deterministik).
-            Teks vertikal kiri dihapus (v2.19, permintaan user). */}
+        {/* chrome — LOGO kiri-atas (v2.20): asset logo owner diekstrak ke
+            ink+alpha (public/images/logo-wa.png). Klik = ke atas (goTop). */}
         <button
           onClick={goTop}
           aria-label="wah:anggaaa — ke atas"
-          className="group absolute top-6 left-7 z-10 hidden cursor-pointer items-baseline gap-2 font-display text-[19px] font-medium tracking-[0.01em] transition-opacity hover:opacity-70 md:flex"
+          className="absolute top-6 left-7 z-10 hidden cursor-pointer transition-opacity hover:opacity-70 md:block"
         >
-          <span aria-hidden className="text-ink/40">
-            &gt;
-          </span>
-          <span>wah:anggaaa</span>
-          <span
-            aria-hidden
-            className="wm-cursor inline-block h-[0.72em] w-[0.45em] translate-y-[0.06em] bg-ink/80"
+          <img
+            src={BASE + 'images/logo-wa.png'}
+            alt=""
+            draggable={false}
+            className="h-[26px] w-auto select-none"
           />
         </button>
 
-        {/* chrome HUYMI — blok MENU (desktop) */}
+        {/* chrome HUYMI — blok MENU (desktop). Garis vertikal hitam dihapus
+            (v2.20, permintaan user). */}
         <div className="absolute top-5 left-[8.6rem] z-10 hidden md:top-6 md:left-[12.5rem] md:block">
-          <div className="flex items-start gap-3.5">
-            <span aria-hidden className="mt-2 block h-11 w-[3px] bg-ink" />
-            <div>
+          <div>
               <p className="lbl mb-2.5 text-ink/55">menu</p>
               {/* panah "→" = efek HOVER (slide-in), bukan permanen */}
               <nav className="flex flex-col items-start gap-0.5 font-serif text-[19px] leading-[1.15]">
@@ -408,7 +404,6 @@ export default function WorksHuy() {
                   </button>
                 ))}
               </nav>
-            </div>
           </div>
         </div>
 

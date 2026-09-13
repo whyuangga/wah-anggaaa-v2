@@ -274,32 +274,10 @@ body {
   animation-delay: var(--d, 0ms);
 }
 
-/* wordmark terminal (v2.19): kursor blok STATIS saat tiba (motif kedip sudah
-   tampil di intro) dan berkedip saat wordmark di-hover/focus — e2e tidak
-   pernah hover wordmark, jadi frame screenshot tetap deterministik. */
-@keyframes cursor-blink {
-  0%,
-  49% {
-    opacity: 0.8;
-  }
-  50%,
-  100% {
-    opacity: 0;
-  }
-}
-.wm-cursor {
-  opacity: 0.8;
-}
-.group:hover .wm-cursor,
-.group:focus-visible .wm-cursor {
-  animation: cursor-blink 0.9s linear infinite;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .scroll-cue,
   .roll-in,
   .roll-out,
-  .wm-cursor,
   .wave:hover .wave-ch {
     animation: none;
   }

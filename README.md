@@ -125,15 +125,15 @@ header ala HUYMI**:
 - **angka raksasa** kiri bawah: `nr.` + `1`…`11` (Heros bold, tanpa zero-pad) + `/ 11`
 - kanan atas: `[ just for fun ] / working from jakarta`
 - kiri bawah: `scroll ↓`; kanan bawah: dua kotak ■ □
-- **chrome home (v2.19)**: wordmark **terminal prompt** `> wah:anggaaa` +
-  kursor blok (lowercase, tanpa asset — murni tipografi; kursor statis saat
-  tiba, berkedip saat hover/focus; motif kedip tampil di intro). Teks
-  vertikal kiri lama (`portfolio '26` dll) **dihapus**. Blok `menu` + bar
-  hitam vertikal + list serif, `[ just for fun ] / working from jakarta`
-  kanan-atas. **Panah "→" di menu = efek hover** (slide-in,
-  CSS `.menu-arrow`) — bukan permanen. Header tipis versi lama (jam JKT)
-  tidak di-render di home — halaman lain tetap memakainya (selalu
-  transparan sejak v2.18).
+- **chrome home (v2.19→v2.20)**: wordmark = **logo monogram**
+  (`public/images/logo-wa.png`, tinta solid di atas kertas, hover opacity
+  saja; v2.19 sempat pakai terminal prompt `> wah:anggaaa` sebelum asset
+  logo tersedia). Teks vertikal kiri lama (`portfolio '26` dll) **dihapus**
+  (v2.19). Blok `menu` + list serif **tanpa bar hitam vertikal** (bar
+  dihapus v2.20), `[ just for fun ] / working from jakarta` kanan-atas.
+  **Panah "→" di menu = efek hover** (slide-in, CSS `.menu-arrow`) — bukan
+  permanen. Header tipis versi lama (jam JKT) tidak di-render di home —
+  halaman lain tetap memakainya (selalu transparan sejak v2.18).
   **Mobile: hamburger di KIRI** (wordmark dihilangkan) → overlay penuh
   (link serif raksasa, `×` tutup, info studio di bawah).
   (Tombol panah lingkaran lama sudah dihapus — navigasi = scroll/list/keyboard.)
