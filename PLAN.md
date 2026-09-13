@@ -755,3 +755,31 @@ Diverifikasi visual di atas kertas via preview komposit.
   (C1/C3 byte-equal — chrome home bebas transisi warna baru).
 - `npm run build` ✔. Screenshot headless: logo solid kiri-atas, bar
   vertikal gone, layout menu utuh.
+
+## 27. v2.21 — logo monogram juga di mobile (2026-09-13)
+
+User: "Di mobile sekalian" — asset logo yang sama dipasang di chrome home
+mobile, menyeimbangkan hamburger kiri: `absolute top-5 right-4 z-10
+md:hidden`, `h-[20px]`, klik = `goTop`, hover/active opacity saja. Overlay
+menu (`z-[80]`) menutupinya saat terbuka.
+
+### Clip list di bawah strip logo
+
+List proyek mobile sebelumnya `top-0` satu kolom penuh → teks yang
+bergulir lewat di bawah logo. Desktop sudah punya preseden
+`md:top-[4.5rem]` + `clipTopRef 72`. Mobile kini `top-12` (48px) dengan
+offset yang sama di dua rumus transform (`clipTopRef` saat animated/GSAP
+dan `listStaticY` saat reduced-motion): `h/2 - 48 - (…)*itemH`. Posisi
+on-screen item aktif **tidak berubah** (translateY mengecil tepat sebesar
+offset container) — hanya clipping atasnya yang baru, jadi komposisi yang
+disukai user tetap sama.
+
+### Verifikasi
+
+- `npx tsc --noEmit` bersih (kecuali 8 error lama `mobile-check2.mjs`).
+- e2e utama **57/57** (termasuk semua check mobile: list tampil ITEM=60,
+  kartu tidak menutupi list, hit-test, wrap, buffer, tanpa overflow-x) +
+  suite tambahan **16/16**.
+- `npm run build` ✔.
+- Screenshot mobile dua frame berjarak 2,6s: strip logo bersih, item list
+  ter-clip rapi di bawah `top-12`; hamburger kiri + logo kanan seimbang.

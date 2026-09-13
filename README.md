@@ -134,8 +134,11 @@ header ala HUYMI**:
   **Panah "→" di menu = efek hover** (slide-in, CSS `.menu-arrow`) — bukan
   permanen. Header tipis versi lama (jam JKT) tidak di-render di home —
   halaman lain tetap memakainya (selalu transparan sejak v2.18).
-  **Mobile: hamburger di KIRI** (wordmark dihilangkan) → overlay penuh
-  (link serif raksasa, `×` tutup, info studio di bawah).
+  **Mobile (v2.21): hamburger di KIRI + logo monogram di KANAN** (asset
+  yang sama, `h-20px`, klik = ke atas); atas list proyek di-clip `top-12`
+  agar item yang bergulir tidak menabrak strip logo (mirip `md:top-[4.5rem]`
+  desktop) → overlay penuh (link serif raksasa, `×` tutup, info studio
+  di bawah).
   (Tombol panah lingkaran lama sudah dihapus — navigasi = scroll/list/keyboard.)
 - **v2.17**: klik kartu MENGINTIP → spotlight jadi fokus menggantikan tengah.
 - **panah lingkaran** = proyek berikutnya; klik list = lompat proyek;
