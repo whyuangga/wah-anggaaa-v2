@@ -337,8 +337,16 @@ await page.close();
     const overlay = await a.evaluate(() => ({
       hasWork: [...document.querySelectorAll('button')].some((b) => b.textContent.trim().includes('work.')),
       hasClose: !!document.querySelector('button[aria-label="tutup menu"]'),
+      // v2.22: wordmark overlay = asset logo monogram, teks lama dihapus
+      logo: !!document.querySelector('.menu-overlay img[src*="logo-wa"]'),
+      noOldText: ![...document.querySelectorAll('.menu-overlay p')].some((p) =>
+        p.textContent.includes('WAH:ANGGAAA'),
+      ),
     }));
-    ok('about (mobile): overlay menu identik home (work/about/contact/journal + tutup)', overlay.hasWork && overlay.hasClose);
+    ok(
+      'about (mobile): overlay menu identik home (work/about/contact/journal + tutup) + logo ganti teks',
+      overlay.hasWork && overlay.hasClose && overlay.logo && overlay.noOldText,
+    );
     await a.waitForTimeout(1000); // biarkan stagger & morph selesai
     const animState = await a.evaluate(() => {
       const btn = document.querySelector('button[data-open="true"]');

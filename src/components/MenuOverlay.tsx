@@ -1,6 +1,8 @@
 import { useLocation } from 'react-router-dom';
 import { isActivePath, useGo } from '../lib/transition';
 
+const BASE = import.meta.env.BASE_URL;
+
 const LINKS = [
   { to: '/', label: 'work.' },
   { to: '/about', label: 'about.' },
@@ -51,7 +53,14 @@ export default function MenuOverlay({
         >
           ×
         </button>
-        <p className="font-display text-[15px] font-bold uppercase tracking-[0.05em]">WAH:ANGGAAA</p>
+        {/* v2.22: teks "WAH:ANGGAAA" diganti asset logo monogram (permintaan
+            user — logo hidup di overlay, bukan di chrome home mobile). */}
+        <img
+          src={BASE + 'images/logo-wa.png'}
+          alt="wah:anggaaa"
+          draggable={false}
+          className="h-[22px] w-auto select-none"
+        />
       </div>
       {/* panah "→" = efek HOVER (slide-in), sama seperti menu desktop */}
       <nav className="mt-16 flex flex-col gap-4 px-6 font-serif text-[38px] leading-tight">

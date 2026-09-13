@@ -182,7 +182,7 @@ export default function WorksHuy() {
 
     const measure = () => {
       hRef.current = stage.clientHeight || window.innerHeight;
-      clipTopRef.current = window.innerWidth >= 768 ? 72 : 48; // md:top-[4.5rem] / mobile top-12
+      clipTopRef.current = window.innerWidth >= 768 ? 72 : 0; // md:top-[4.5rem]
     };
     measure();
 
@@ -359,7 +359,7 @@ export default function WorksHuy() {
     // list mode statis: titik tengah lipatan ke-2
     const listStaticY = (
       hRef.current / 2 -
-      (typeof window !== 'undefined' && window.innerWidth >= 768 ? 72 : 48) -
+      (typeof window !== 'undefined' && window.innerWidth >= 768 ? 72 : 0) -
       (i + N + 0.5) * itemH()
     ).toFixed(0);
     return (
@@ -413,22 +413,6 @@ export default function WorksHuy() {
           onToggle={() => setMenuOpen((o) => !o)}
           className="absolute top-5 left-5 z-20 md:hidden"
         />
-
-        {/* chrome — LOGO kanan-atas (mobile, v2.21): asset yang sama dengan
-            desktop, menyeimbangkan hamburger kiri. Klik = goTop. Overlay menu
-            (z-80) menutupinya saat terbuka. */}
-        <button
-          onClick={goTop}
-          aria-label="wah:anggaaa — ke atas"
-          className="absolute top-5 right-4 z-10 cursor-pointer transition-opacity hover:opacity-70 active:opacity-70 md:hidden"
-        >
-          <img
-            src={BASE + 'images/logo-wa.png'}
-            alt=""
-            draggable={false}
-            className="h-[20px] w-auto select-none"
-          />
-        </button>
 
         {/* kanan atas (desktop) */}
         <div className="absolute top-7 right-4 hidden text-right md:top-8 md:right-7 md:block">
@@ -497,7 +481,7 @@ export default function WorksHuy() {
             tidak pernah bolong saat wrap; atasnya di-clip di bawah chrome
             agar item yang bergulir tidak menabrak teks kanan-atas.
             Mobile: tampil penuh (kartu sudah digeser ke kiri). */}
-        <div className="absolute top-12 right-2 bottom-0 z-10 w-[40vw] overflow-hidden md:top-[4.5rem] md:right-10 md:w-[46vw] md:max-w-[320px]">
+        <div className="absolute top-0 right-2 bottom-0 z-10 w-[40vw] overflow-hidden md:top-[4.5rem] md:right-10 md:w-[46vw] md:max-w-[320px]">
           <div
             ref={animated ? listRef : undefined}
             className="absolute inset-x-0 top-0"

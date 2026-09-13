@@ -783,3 +783,23 @@ disukai user tetap sama.
 - `npm run build` ✔.
 - Screenshot mobile dua frame berjarak 2,6s: strip logo bersih, item list
   ter-clip rapi di bawah `top-12`; hamburger kiri + logo kanan seimbang.
+
+## 28. v2.22 — logo pindah ke overlay menu; chrome home mobile balik polos (2026-09-13)
+
+Feedback user atas v2.21: "kurang cocok di mobile". Keputusan: logo TIDAK
+di chrome home mobile — chrome balik seperti semula (hamburger kiri saja,
+list `top-0` penuh; offset clip 48 di `clipTopRef`/`listStaticY` dikembalikan
+ke 0). Logo dipasang di **MenuOverlay**: teks `WAH:ANGGAAA` di baris
+atas (sebelah tombol `×`) diganti `<img logo-wa.png h-[22px] alt="wah:anggaaa">`.
+Karena MenuOverlay komponen shared (home + about/contact/journal, mobile &
+desktop), logo tampil konsisten di semua overlay menu.
+
+### Verifikasi
+
+- Check e2e overlay diperluas: `logo` (img `src*="logo-wa"` ada) +
+  `noOldText` (teks `WAH:ANGGAAA` hilang) — suite utama **57/57**, tambahan
+  **16/16**.
+- Probe DOM mobile (bukan screenshot): overlay terbuka → logo visible
+  80×22 di kanan-atas, opacity 1; chrome home mobile tanpa tombol logo.
+- `npx tsc --noEmit` bersih (kecuali 8 error lama `mobile-check2.mjs`);
+  `npm run build` ✔.
